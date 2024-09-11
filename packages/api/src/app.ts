@@ -10,7 +10,7 @@ import { type NextFunction, type Request, type Response, json } from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 import signale from "signale";
-import { APP_URI, NODE_ENV } from "./app/constants";
+import { CORS_ORIGIN_URL_LIST, CORS_ORIGIN_URLS_REGEX_LIST, NODE_ENV } from "./app/constants";
 import { task } from "./app/cron";
 import { Auth } from "./controllers/Auth";
 import { Identities } from "./controllers/Identities";
@@ -53,7 +53,10 @@ const server = new (class extends Server {
 
 		this.app.use(
 			cors({
-				origin: [APP_URI],
+				origin: [
+					...CORS_ORIGIN_URL_LIST,
+					...CORS_ORIGIN_URLS_REGEX_LIST.map((regex) => new RegExp(regex)),
+				],
 				credentials: true,
 			}),
 		);
