@@ -279,6 +279,9 @@ export class Contacts {
 						failed: [],
 					};
 
+          // Email validation regex
+          const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
+
 					for (const row of contacts) {
 						try {
 							const {
@@ -295,6 +298,11 @@ export class Contacts {
 								result.failed.push({ row, error: "Email is required" });
 								continue;
 							}
+
+              if (!emailRegex.test(email)) {
+                result.failed.push({ row, error: "Invalid email format" });
+                continue;
+              }
 
 							let contact = await ContactService.email(project.id, email);
 
