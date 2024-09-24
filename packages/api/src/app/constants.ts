@@ -40,3 +40,6 @@ export const AWS_REGION = validateEnv("AWS_REGION");
 export const AWS_ACCESS_KEY_ID = validateEnv("AWS_ACCESS_KEY_ID");
 export const AWS_SECRET_ACCESS_KEY = validateEnv("AWS_SECRET_ACCESS_KEY");
 export const AWS_SES_CONFIGURATION_SET = validateEnv("AWS_SES_CONFIGURATION_SET");
+
+export const CORS_ORIGIN_URL_LIST = validateEnv("CORS_ORIGIN_URL_LIST", "").split(",");
+export const CORS_ORIGIN_URLS_REGEX_LIST = validateEnv("CORS_ORIGIN_URLS_REGEX_LIST", "").split(",");

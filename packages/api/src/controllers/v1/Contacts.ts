@@ -1,6 +1,9 @@
 import { Controller, Delete, Get, Middleware, Post, Put } from "@overnightjs/core";
 import { ContactSchemas, UtilitySchemas } from "@plunk/shared";
-import type { Request, Response } from "express";
+import csv from "csv-parser";
+import type { NextFunction, Request, Response } from "express";
+import fs from "fs";
+import multer from "multer";
 import z from "zod";
 import { prisma } from "../../database/prisma";
 import { HttpException, NotFound } from "../../exceptions";
@@ -11,6 +14,8 @@ import { EventService } from "../../services/EventService";
 import { ProjectService } from "../../services/ProjectService";
 import { Keys } from "../../services/keys";
 import { redis } from "../../services/redis";
+
+const upload = multer({ dest: "uploads/" });
 
 @Controller("contacts")
 export class Contacts {
@@ -232,6 +237,128 @@ export class Contacts {
 			data: contact.data,
 			createdAt: contact.createdAt,
 			updatedAt: contact.updatedAt,
+		});
+	}
+
+	@Post("import")
+	@Middleware([isValidSecretKey])
+	public async importContacts(req: Request, res: Response, next: NextFunction) {
+		const { sk } = res.locals.auth as ISecret;
+		const project = await ProjectService.secret(sk);
+
+		if (!project) {
+			throw new NotFound("project");
+		}
+
+		upload.single("file")(req, res, async (err: any) => {
+			if (err) {
+				return res.status(400).json({ error: "File upload failed" });
+			}
+
+			const file = req.file;
+
+			// Check if the file is undefined or not
+			if (!file) {
+				return res.status(400).json({ error: "No file uploaded" });
+			}
+
+			const contacts: any[] = [];
+
+			fs.createReadStream(file.path)
+				.pipe(csv())
+				.on("data", (row) => {
+					contacts.push(row);
+				})
+				.on("end", async () => {
+					// Define the type for the result object
+					const result: {
+						success: { email: string }[];
+						failed: { email?: string; row?: any; error: string }[];
+					} = {
+						success: [],
+						failed: [],
+					};
+
+          // Email validation regex
+          const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
+
+					for (const row of contacts) {
+						try {
+							const {
+								first_name,
+								last_name,
+								gender,
+								email,
+								phone_code,
+								phone,
+								contact_type,
+							} = row;
+
+							if (!email) {
+								result.failed.push({ row, error: "Email is required" });
+								continue;
+							}
+
+              if (!emailRegex.test(email)) {
+                result.failed.push({ row, error: "Invalid email format" });
+                continue;
+              }
+
+							let contact = await ContactService.email(project.id, email);
+
+							if (contact) {
+								result.failed.push({ email, error: "Contact already exists" });
+								continue;
+							}
+
+							// Handle missing values (e.g., phone_code and phone)
+							const sanitizedPhoneCode = phone_code ? phone_code.trim() : null;
+							const sanitizedPhone = phone ? phone.trim() : null;
+							const sanitizedFirstName = first_name ? first_name.trim() : null;
+							const sanitizedLastName = last_name ? last_name.trim() : null;
+							const sanitizedGender = gender ? gender.trim() : null;
+							const sanitizedContactType = contact_type
+								? contact_type.trim()
+								: null;
+
+							// Create contact
+							contact = await prisma.contact.create({
+								data: {
+									projectId: project.id,
+									email,
+									data: JSON.stringify({
+										firstName: sanitizedFirstName,
+										lastName: sanitizedLastName,
+										gender: sanitizedGender,
+										phoneCode: sanitizedPhoneCode,
+										phone: sanitizedPhone,
+										contactType: sanitizedContactType,
+									}),
+								},
+							});
+
+							result.success.push({ email });
+
+							// Clear cache
+							await redis.del(Keys.Project.contacts(project.id));
+							await redis.del(Keys.Contact.id(contact.id));
+							await redis.del(Keys.Contact.email(project.id, email));
+						} catch (error) {
+							// Use a type guard to check if error is an instance of Error
+							if (error instanceof Error) {
+								result.failed.push({ email: row.email, error: error.message });
+							} else {
+								result.failed.push({
+									email: row.email,
+									error: "An unknown error occurred",
+								});
+							}
+						}
+					}
+
+					fs.unlinkSync(file.path); // Clean up the file
+					return res.status(200).json(result);
+				});
 		});
 	}
 
