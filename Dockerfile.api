@@ -1,12 +1,20 @@
 # Base Stage
 FROM node:alpine AS base
 
+# Enable Corepack
+RUN corepack enable
+
+# Set the Yarn version to match your package.json
+RUN corepack prepare yarn@4.3.0 --activate
+
 WORKDIR /app
 
 COPY tools/preinstall.js ./tools/preinstall.js
 COPY packages/api/package.json packages/api/
 COPY packages/shared/package.json packages/shared/
 COPY package.json yarn.lock ./
+COPY .yarnrc.yml ./
+COPY .yarn/releases/yarn-4.3.0.cjs ./.yarn/releases/
 
 RUN yarn install --network-timeout 1000000
 
