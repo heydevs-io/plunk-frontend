@@ -46,6 +46,138 @@ export class ProjectService {
 		},
 	};
 
+	public static contactsV2 = {
+		buildFilters: (filters: {
+			firstName?: string[];
+			lastName?: string[];
+			gender?: string;
+			phoneCode?: string[];
+			phone?: string[];
+			contactType?: string[];
+		}) => {
+			const conditions: any[] = [];
+	
+			// Handle firstNames with OR condition
+  if (filters.firstName && filters.firstName.length > 0) {
+    const firstNameConditions = filters.firstName.map((name) => ({
+      data: { contains: `"firstName":"${name}"` },
+    }));
+    conditions.push({ OR: firstNameConditions });
+  }
+
+  // Handle lastNames with OR condition
+  if (filters.lastName && filters.lastName.length > 0) {
+    const lastNameConditions = filters.lastName.map((name) => ({
+      data: { contains: `"lastName":"${name}"` },
+    }));
+    conditions.push({ OR: lastNameConditions });
+  }
+
+  // Handle genders with OR condition
+	if (filters.gender) {
+		conditions.push({ data: { contains: '"gender":"' + filters.gender + '"'} });
+	}
+
+  // Handle phoneCodes with OR condition
+  if (filters.phoneCode && filters.phoneCode.length > 0) {
+    const phoneCodeConditions = filters.phoneCode.map((code) => ({
+      data: { contains: `"phoneCode":"${code}"` },
+    }));
+    conditions.push({ OR: phoneCodeConditions });
+  }
+
+  // Handle phones with OR condition
+  if (filters.phone && filters.phone.length > 0) {
+    const phoneConditions = filters.phone.map((number) => ({
+      data: { contains: `"phone":"${number}"` },
+    }));
+    conditions.push({ OR: phoneConditions });
+  }
+
+  // Handle contactTypes with OR condition
+  if (filters.contactType && filters.contactType.length > 0) {
+    const contactTypeConditions = filters.contactType.map((type) => ({
+      data: { contains: `"contactType":"${type}"` },
+    }));
+    conditions.push({ OR: contactTypeConditions });
+  }
+
+  return conditions.length > 0 ? { AND: conditions } : {};
+		},
+    get: (
+      id: string,
+      filters: {
+        firstName?: string[];
+        lastName?: string[];
+        gender?: string;
+        phoneCode?: string[];
+        phone?: string[];
+        contactType?: string[];
+      }
+    ) => {
+      return wrapRedis(Keys.Project.contacts(id), async () => {
+				const filterConditions = this.contactsV2.buildFilters(filters);
+        return prisma.project.findUnique({ where: { id } }).contacts({
+          select: {
+            id: true,
+            email: true,
+            subscribed: true,
+            createdAt: true,
+            updatedAt: true,
+						data: true,
+            triggers: { select: { createdAt: true, eventId: true } },
+          },
+          where: filterConditions
+        });
+      });
+    },
+
+    paginated: (
+			id: string,
+			filters: {
+				firstName?: string[];
+				lastName?: string[];
+				gender?: string;
+				phoneCode?: string[];
+				phone?: string[];
+				contactType?: string[];
+			},
+			page: number) => {
+      return wrapRedis(Keys.Project.contacts(id, { page }), async () => {
+				const filterConditions = this.contactsV2.buildFilters(filters);
+        return prisma.project.findUnique({ where: { id } }).contacts({
+          select: {
+            id: true,
+            email: true,
+            subscribed: true,
+            createdAt: true,
+						data: true,
+            triggers: { select: { createdAt: true } },
+            emails: { select: { createdAt: true } },
+          },
+					where: filterConditions,
+          orderBy: [{ createdAt: "desc" }],
+          take: 20,
+          skip: (page - 1) * 20,
+        });
+      });
+    },
+
+    count: (id: string, filters: {
+			firstName?: string[];
+			lastName?: string[];
+			gender?: string;
+			phoneCode?: string[];
+			phone?: string[];
+			contactType?: string[];
+		}) => {
+      return wrapRedis(Keys.Project.contacts(id, { count: true }), async () => {
+				const filterConditions = this.contactsV2.buildFilters(filters);
+        return prisma.contact.count({ where: { projectId: id, ...filterConditions } });
+      });
+    },
+  };
+
 	public static emails = {
 		get: (id: string) => {
 			return wrapRedis(Keys.Project.emails(id), async () => {
