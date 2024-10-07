@@ -108,13 +108,13 @@ export class Contacts {
 
 		const { id, email } = ContactSchemas.manage.parse(req.body);
 
-		const contact = id ? await ContactService.id(id) : await ContactService.email(project.id, email as string);
+		let contact = id ? await ContactService.id(id) : await ContactService.email(project.id, email as string);
 
 		if (!contact || contact.projectId !== project.id) {
 			throw new NotFound("contact");
 		}
 
-		await prisma.contact.update({
+		contact = await prisma.contact.update({
 			where: { id: contact.id },
 			data: { subscribed: false },
 		});
@@ -159,13 +159,13 @@ export class Contacts {
 
 		const { id, email } = ContactSchemas.manage.parse(req.body);
 
-		const contact = id ? await ContactService.id(id) : await ContactService.email(project.id, email as string);
+		let contact = id ? await ContactService.id(id) : await ContactService.email(project.id, email as string);
 
 		if (!contact || contact.projectId !== project.id) {
 			throw new NotFound("contact");
 		}
 
-		await prisma.contact.update({
+		contact = await prisma.contact.update({
 			where: { id: contact.id },
 			data: { subscribed: true },
 		});
