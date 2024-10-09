@@ -422,6 +422,68 @@ export class Contacts {
 		});
 	}
 
+	@Put("bulk-update")
+	@Middleware([isValidSecretKey])
+	public async bulkUpdateContacts(req: Request, res: Response) {
+		const { sk } = res.locals.auth as ISecret;
+
+		const project = await ProjectService.secret(sk);
+
+		if (!project) {
+			throw new NotFound("project");
+		}
+
+		const { contactIds, updateData } = z.object({
+			contactIds: z.array(z.string()),
+			updateData: z.object({
+				contactType: z.string().optional(),
+				gender: z.string().optional(),
+			}),
+		}).parse(req.body);
+
+		if (Object.keys(updateData).length === 0) {
+			throw new HttpException(400, "No update data provided");
+		}
+
+		const updatedContacts = await prisma.$transaction(async (tx) => {
+			return Promise.all(
+				contactIds.map(async (id) => {
+					const contact = await tx.contact.findUnique({
+						where: { id, projectId: project.id },
+						select: { data: true },
+					});
+					
+					if (!contact) {
+						throw new NotFound(`Contact with id ${id} not found`);
+					}
+
+					const existingData = JSON.parse(contact.data || '{}');
+					const newData = { ...existingData, ...updateData };
+
+					return tx.contact.update({
+						where: { id, projectId: project.id },
+						data: { data: JSON.stringify(newData) },
+					});
+				})
+			);
+		});
+
+		// Clear cache for updated contacts
+		await Promise.all(
+			updatedContacts.map(async (contact) => {
+				await redis.del(Keys.Contact.id(contact.id));
+				await redis.del(Keys.Contact.email(project.id, contact.email));
+			})
+		);
+
+		await redis.del(Keys.Project.contacts(project.id));
+
+		return res.status(200).json({
+			success: true,
+			updatedContacts,
+		});
+	}
+
 	@Delete()
 	@Middleware([isValidSecretKey])
 	public async deleteContact(req: Request, res: Response) {
