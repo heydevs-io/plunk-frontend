@@ -422,7 +422,7 @@ export class Contacts {
 		});
 	}
 
-	@Put("bulk-update")
+	@Put("bulk")
 	@Middleware([isValidSecretKey])
 	public async bulkUpdateContacts(req: Request, res: Response) {
 		const { sk } = res.locals.auth as ISecret;
@@ -519,4 +519,54 @@ export class Contacts {
 			updatedAt: contact.updatedAt,
 		});
 	}
+
+	@Delete("bulk")
+    @Middleware([isValidSecretKey])
+    public async bulkDeleteContacts(req: Request, res: Response) {
+        const { sk } = res.locals.auth as ISecret;
+
+        const project = await ProjectService.secret(sk);
+
+        if (!project) {
+            throw new NotFound("project");
+        }
+
+        const { contactIds } = z.object({
+            contactIds: z.array(z.string()),
+        }).parse(req.body);
+
+        const deletedContacts = await prisma.$transaction(async (tx) => {
+            return Promise.all(
+                contactIds.map(async (id) => {
+                    const contact = await tx.contact.findUnique({
+                        where: { id, projectId: project.id },
+                    });
+
+                    if (!contact) {
+                        throw new NotFound(`Contact with id ${id} not found`);
+                    }
+										
+                    return tx.contact.delete({ where: { id } });
+                })
+            );
+        });
+
+        // Clear cache for deleted contacts
+        await Promise.all(
+            deletedContacts.map(async (contact) => {
+                await redis.del(Keys.Contact.id(contact.id));
+                await redis.del(Keys.Contact.email(project.id, contact.email));
+            })
+        );
+
+        await redis.del(Keys.Project.contacts(project.id));
+
+        return res.status(200).json({
+            success: true,
+            deletedContacts: deletedContacts.map(contact => ({
+                id: contact.id,
+                email: contact.email,
+            })),
+        });
+    }
 }
