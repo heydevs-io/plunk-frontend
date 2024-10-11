@@ -1,7 +1,6 @@
 import "dotenv/config";
 import "express-async-errors";
 
-import { STATUS_CODES } from "node:http";
 import { Server } from "@overnightjs/core";
 import compression from "compression";
 import cookies from "cookie-parser";
@@ -9,6 +8,7 @@ import cors from "cors";
 import { type NextFunction, type Request, type Response, json } from "express";
 import helmet from "helmet";
 import morgan from "morgan";
+import { STATUS_CODES } from "node:http";
 import signale from "signale";
 import { CORS_ORIGIN_URL_LIST, CORS_ORIGIN_URLS_REGEX_LIST, NODE_ENV } from "./app/constants";
 import { task } from "./app/cron";
@@ -19,6 +19,7 @@ import { Projects } from "./controllers/Projects";
 import { Tasks } from "./controllers/Tasks";
 import { Users } from "./controllers/Users";
 import { Webhooks } from "./controllers/Webhooks";
+import { Internal } from "./controllers/internal";
 import { V1 } from "./controllers/v1";
 import { prisma } from "./database/prisma";
 import { HttpException } from "./exceptions";
@@ -72,6 +73,7 @@ const server = new (class extends Server {
 			new Identities(),
 			new Tasks(),
 			new V1(),
+			new Internal()
 		]);
 
 		this.app.use("*", () => {

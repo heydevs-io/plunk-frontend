@@ -49,6 +49,37 @@ export const isValidKey = (req: Request, res: Response, next: NextFunction) => {
 	next();
 };
 
+/**
+ * Middleware to validate the secret key in the x-secret-key header
+ * @param req
+ * @param res
+ * @param next
+ */
+export const isValidInternalSecretKey = (req: Request, res: Response, next: NextFunction) => {
+  const secretKey = req.header('x-secret-key');
+
+  if (!secretKey) {
+    throw new HttpException(401, "Missing x-secret-key header");
+  }
+
+  if (!secretKey.startsWith('sk_itn_')) {
+    throw new HttpException(401, "Invalid secret key format. Secret keys should start with 'sk_itn'");
+  }
+
+  // TODO: Add logic to validate the secret key against your database or configuration
+	const internalSecretKey = process.env.INTERNAL_SECRET_KEY;
+
+  if (!internalSecretKey) {
+    throw new HttpException(500, "Internal server error: INTERNAL_SECRET_KEY not set");
+  }
+
+  if (secretKey !== internalSecretKey) {
+    throw new HttpException(401, "Invalid secret key");
+  }
+
+  next();
+};
+
 export const jwt = {
 	/**
 	 * Extracts a unsubscribe id from a jwt
