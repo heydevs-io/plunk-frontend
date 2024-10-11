@@ -110,6 +110,7 @@ model Template {
   body    String
   email   String?
   from    String?
+  emailJson String?
 
   type  TemplateType
   style TemplateStyle

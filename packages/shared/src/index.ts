@@ -216,6 +216,7 @@ export const TemplateSchemas = {
 		from: z.string().nullish(),
 		type: z.nativeEnum(TemplateType).default("MARKETING"),
 		style: z.nativeEnum(TemplateStyle).default("PLUNK"),
+		emailJson: z.record(z.unknown()).nullable().or(z.string()),
 	}),
 	update: z.object({
 		id,
@@ -225,6 +226,7 @@ export const TemplateSchemas = {
 		from: z.string().nullish(),
 		type: z.nativeEnum(TemplateType).default("MARKETING"),
 		style: z.nativeEnum(TemplateStyle).default("PLUNK"),
+		emailJson: z.record(z.unknown()).nullable().or(z.string()),
 	}),
 };
 
