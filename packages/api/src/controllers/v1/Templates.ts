@@ -20,7 +20,6 @@ export class Templates {
 		const { userId } = res.locals.auth as IJwt;
 
 		const template = await TemplateService.id(id);
-		console.log('template :>> ', template);
 
 		if (!template) {
 			throw new NotFound("template");
