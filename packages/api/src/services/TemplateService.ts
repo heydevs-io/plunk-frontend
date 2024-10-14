@@ -1,11 +1,16 @@
-import {wrapRedis} from './redis';
-import {prisma} from '../database/prisma';
-import {Keys} from './keys';
+import { prisma } from '../database/prisma';
+import { Keys } from './keys';
+import { wrapRedis } from './redis';
 
 export class TemplateService {
   public static id(id: string) {
     return wrapRedis(Keys.Template.id(id), async () => {
-      return prisma.template.findUnique({where: {id}, include: {actions: true}});
+      return prisma.template.findUnique({
+        where: {id}, 
+        include: {
+          actions: true,
+        }
+      });
     });
   }
 

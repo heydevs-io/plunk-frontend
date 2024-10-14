@@ -31,7 +31,10 @@ export class Templates {
 			throw new NotFound("template");
 		}
 
-		return res.status(200).json(template);
+		return res.status(200).json({
+			...template, 
+			emailJson: template.emailJson ? JSON.parse(template.emailJson) : null
+		});
 	}
 
 	@Post("duplicate")
@@ -103,7 +106,7 @@ export class Templates {
 			throw new NotFound("project");
 		}
 
-		const { subject, body, type, style, email, from } = TemplateSchemas.create.parse(req.body);
+		const { subject, body, type, style, email, from, emailJson } = TemplateSchemas.create.parse(req.body);
 
 		if (email && !project.verified) {
 			throw new NotAllowed("You need to attach a domain to your project to customize the sender address");
@@ -122,6 +125,7 @@ export class Templates {
 				style,
 				from: from === "" ? null : from,
 				email: email === "" ? null : email,
+				emailJson: emailJson ? JSON.stringify(emailJson) : null,
 			},
 		});
 
@@ -162,8 +166,7 @@ export class Templates {
 		if (!project) {
 			throw new NotFound("project");
 		}
-
-		const { id, subject, body, type, style, email, from } = TemplateSchemas.update.parse(req.body);
+		const { id, subject, body, type, style, email, from, emailJson } = TemplateSchemas.update.parse(req.body);
 
 		let template = await TemplateService.id(id);
 
@@ -186,6 +189,7 @@ export class Templates {
 				body,
 				type,
 				style,
+				emailJson: emailJson ? JSON.stringify(emailJson) : null,
 				from: from === "" ? null : from,
 				email: email === "" ? null : email,
 			},
