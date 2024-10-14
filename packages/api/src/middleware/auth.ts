@@ -26,6 +26,12 @@ export interface IKey {
  * @param next
  */
 export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+	if(req.headers['x-auth-token']) {
+		res.locals.auth = { type: "jwt", userId: parseJwtAuthKey(req) };
+
+		return next();
+	}
+
 	res.locals.auth = { type: "jwt", userId: parseJwt(req) };
 
 	next();
@@ -122,6 +128,26 @@ export const jwt = {
  */
 export function parseJwt(request: Request): string {
 	const token: string | undefined = request.cookies.token;
+
+	if (!token) {
+		throw new NotAuthenticated();
+	}
+
+	const id = jwt.verify(token);
+
+	if (!id) {
+		throw new NotAuthenticated();
+	}
+
+	return id;
+}
+
+/**
+ * Parse a unsubscribe's ID from the request JWT token
+ * @param request The express request object
+ */
+export function parseJwtAuthKey(request: Request): string {
+	const token: string | undefined = request.header('x-auth-token');
 
 	if (!token) {
 		throw new NotAuthenticated();

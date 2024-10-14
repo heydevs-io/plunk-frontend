@@ -381,6 +381,31 @@ export class Projects {
 		return res.status(200).json(campaigns);
 	}
 
+	@Get("id/:id/campaignsV2")
+	@Middleware([isAuthenticated])
+	public async getProjectCampaignsByIDV2(req: Request, res: Response) {
+		const { id: projectId } = UtilitySchemas.id.parse(req.params);
+
+		const { userId } = res.locals.auth as IJwt;
+
+		const project = await ProjectService.id(projectId);
+
+		if (!project) {
+			throw new NotFound("project");
+		}
+
+		const isMember = await MembershipService.isMember(projectId, userId);
+
+		if (!isMember) {
+			throw new NotAllowed();
+		}
+
+		const campaigns = await ProjectService.campaignsV2(projectId);
+
+		return res.status(200).json(campaigns);
+	}
+
+
 	@Get("id/:id/emails/count")
 	@Middleware([isAuthenticated])
 	public async getProjectEmailCountByID(req: Request, res: Response) {
