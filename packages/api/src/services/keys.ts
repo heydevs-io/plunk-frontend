@@ -96,6 +96,9 @@ export const Keys = {
     id(id: string): string {
       return `campaign:id:${id}`;
     },
+    emails(id: string): string {
+      return `campaign:id:${id}:emails`;
+    },
   },
   Template: {
     id(id: string): string {

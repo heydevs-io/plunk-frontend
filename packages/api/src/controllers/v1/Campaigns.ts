@@ -37,6 +37,59 @@ export class Campaigns {
 		return res.status(200).json(campaign);
 	}
 
+	@Get("info/:id")
+	@Middleware([isAuthenticated])
+	public async getCampaignByIdV2(req: Request, res: Response) {
+		const { id } = UtilitySchemas.id.parse(req.params);
+
+		const { userId } = res.locals.auth as IJwt;
+
+		const campaign = await CampaignService.idV2(id);
+
+		if (!campaign) {
+			throw new NotFound("campaign");
+		}
+
+		const isMember = await MembershipService.isMember(campaign.projectId, userId);
+
+		if (!isMember) {
+			throw new NotFound("campaign");
+		}
+
+		return res.status(200).json(campaign);
+	}
+
+	@Get("info/:id/emails")
+	@Middleware([isAuthenticated])
+	public async getCampaignEmails(req: Request, res: Response) {
+		const { id } = UtilitySchemas.id.parse(req.params);
+		const { page = 1, pageSize = 10, status, keywords } = req.query;
+
+		const { userId } = res.locals.auth as IJwt;
+
+		const campaign = await CampaignService.id(id);
+
+		if (!campaign) {
+			throw new NotFound("campaign");
+		}
+
+		const isMember = await MembershipService.isMember(campaign.projectId, userId);
+
+		if (!isMember) {
+			throw new NotFound("campaign");
+		}
+
+		const emails = await CampaignService.emailsV2(
+			id,
+			Number(page),
+			Number(pageSize),
+			status as string | undefined,
+			keywords as string | undefined
+		);
+
+		return res.status(200).json(emails);
+	}
+
 	@Post("send")
 	@Middleware([isValidSecretKey])
 	public async sendCampaign(req: Request, res: Response) {

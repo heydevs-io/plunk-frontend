@@ -288,6 +288,50 @@ export class Projects {
 		return res.status(200).json({ contacts, count });
 	}
 
+	@Get("id/:id/contactsV2")
+  @Middleware([isAuthenticated])
+  public async getProjectContactsByIDV2(req: Request, res: Response) {
+    const { id: projectId } = UtilitySchemas.id.parse(req.params);
+    const { page } = UtilitySchemas.pagination.parse(req.query);
+
+    const { firstName, lastName, gender, phone, phoneCode, contactType } =
+      UtilitySchemas.filters.parse(req.query);
+
+    const { userId } = res.locals.auth as IJwt;
+
+    const project = await ProjectService.id(projectId);
+
+    if (!project) {
+      throw new NotFound("project");
+    }
+
+    const isMember = await MembershipService.isMember(projectId, userId);
+
+    if (!isMember) {
+      throw new NotAllowed();
+    }
+
+    const filters = {
+      firstName,
+      lastName,
+      gender,
+      phoneCode,
+      phone,
+      contactType,
+    };
+
+    if (page === 0) {
+      const contacts = await ProjectService.contactsV2.get(projectId, filters);
+
+      return res.status(200).json({ contacts, count: contacts?.length });
+    }
+    const contacts = await ProjectService.contactsV2.paginated(projectId, filters, page);
+    const count = await ProjectService.contactsV2.count(projectId, filters);
+
+    return res.status(200).json({ contacts, count });
+  }
+
+
 	@Get("id/:id/feed")
 	@Middleware([isAuthenticated])
 	public async getProjectFeedByID(req: Request, res: Response) {

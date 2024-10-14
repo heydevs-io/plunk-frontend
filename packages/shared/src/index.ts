@@ -12,12 +12,57 @@ const id = z
 	.string({ invalid_type_error: "ID needs to be a string", required_error: "ID is required" })
 	.uuid({ message: "Id needs to be a valid UUID" });
 
+const firstName = z
+  .string()
+  .min(1, "First name needs to be at least 1 character long")
+  .max(50, "First name needs to be less than 50 characters long")
+  .optional()
+	.transform((value) => value ? value.split("|").map((v) => v.trim()) : []); 
+
+const lastName = z
+  .string()
+  .min(1, "Last name needs to be at least 1 character long")
+  .max(50, "Last name needs to be less than 50 characters long")
+  .optional()
+	.transform((value) => value ? value.split("|").map((v) => v.trim()) : []); 
+
+const gender = z
+  .string()
+  .min(1, "Gender needs to be at least 1 character long")
+  .optional()
+
+const phoneCode = z
+  .string()
+  .min(1, "Phone code needs to be at least 1 character long")
+  .optional()
+	.transform((value) => value ? value.split("|").map((v) => v.trim()) : []); 
+
+const phone = z
+  .string()
+  .min(1, "Phone needs to be at least 1 character long")
+  .optional()
+	.transform((value) => value ? value.split("|").map((v) => v.trim()) : []); 
+
+const contactType = z
+  .string()
+  .min(1, "Contact type needs to be at least 1 character long")
+  .optional()
+	.transform((value) => value ? value.split("|").map((v) => v.trim()) : []); 
+
 export const UtilitySchemas = {
 	id: z.object({
 		id,
 	}),
 	email: z.object({
 		email,
+	}),
+	filters: z.object({
+		firstName,
+		lastName,
+		gender,
+		phoneCode,
+		phone,
+		contactType,
 	}),
 	pagination: z.object({
 		page: z
