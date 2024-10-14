@@ -34,7 +34,10 @@ export class Campaigns {
 			throw new NotFound("campaign");
 		}
 
-		return res.status(200).json(campaign);
+		return res.status(200).json({
+			...campaign,
+			emailJson: campaign.emailJson ? JSON.parse(campaign.emailJson) : null
+		});
 	}
 
 	@Get("info/:id")
@@ -235,7 +238,7 @@ export class Campaigns {
 			throw new NotFound("project");
 		}
 
-		let { subject, body, recipients, style, email, from } = CampaignSchemas.create.parse(req.body);
+		let { subject, body, recipients, style, email, from, emailJson } = CampaignSchemas.create.parse(req.body);
 
 		if (email && !project.verified) {
 			throw new NotAllowed("You need to attach a domain to your project to customize the sender address");
@@ -262,6 +265,7 @@ export class Campaigns {
 				style,
 				from: from === "" ? null : from,
 				email: email === "" ? null : email,
+				emailJson: emailJson ? JSON.stringify(emailJson) : null,
 			},
 		});
 
@@ -318,7 +322,7 @@ export class Campaigns {
 			throw new NotFound("project");
 		}
 
-		let { id, subject, body, recipients, style, email, from } = CampaignSchemas.update.parse(req.body);
+		let { id, subject, body, recipients, style, email, from, emailJson } = CampaignSchemas.update.parse(req.body);
 
 		if (email && !project.verified) {
 			throw new NotAllowed("You need to attach a domain to your project to customize the sender address");
@@ -351,6 +355,7 @@ export class Campaigns {
 				style,
 				from: from === "" ? null : from,
 				email: email === "" ? null : email,
+				emailJson: emailJson ? JSON.stringify(emailJson) : null,
 			},
 			include: {
 				recipients: { select: { id: true } },

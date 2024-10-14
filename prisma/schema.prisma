@@ -166,6 +166,7 @@ model Campaign {
   body    String
   email   String?
   from    String?
+  emailJson String?
 
   status    CampaignStatus @default(DRAFT)
   delivered DateTime?
