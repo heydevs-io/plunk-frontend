@@ -53,21 +53,19 @@ export default function Index() {
     setSubmitted(true);
     const result = await network.fetch<
       | {
-        success: true;
-        data: User;
-      }
+          success: true;
+          data: User;
+        }
       | {
-        success: false;
-        data: string;
-      }
+          success: false;
+          data: string;
+        }
       | {
-        success: "redirect";
-        redirect: string;
-      },
+          success: "redirect";
+          redirect: string;
+        },
       typeof UserSchemas.credentials
-    >("POST", "/auth/login", {
-      ...data,
-    });
+    >("POST", "/auth/login", data);
 
     if (result.success === "redirect") {
       return router.push(result.redirect);
@@ -85,17 +83,28 @@ export default function Index() {
 
   return (
     <>
-      <div className="bg-off-white flex min-h-screen flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="flex flex-col justify-center min-h-screen py-12 bg-off-white sm:px-6 lg:px-8">
         <div className="flex flex-col items-center sm:mx-auto sm:w-full sm:max-w-md">
-          <Image src={logo} placeholder={"blur"} width={35} height={35} alt={"Plunk Logo"} />
-          <h2 className="mt-4 text-center text-3xl font-bold text-neutral-800">Sign in to your account</h2>
+          <Image
+            src={logo}
+            placeholder={"blur"}
+            width={35}
+            height={35}
+            alt={"Plunk Logo"}
+          />
+          <h2 className="mt-4 text-3xl font-bold text-center text-neutral-800">
+            Sign in to your account
+          </h2>
         </div>
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="rounded border border-neutral-200 bg-white px-4 py-8 sm:px-10">
+          <div className="px-4 py-8 bg-white border rounded border-neutral-200 sm:px-10">
             <form onSubmit={handleSubmit(login)} className="space-y-6">
               <div>
-                <label htmlFor={"email"} className="block text-sm font-medium text-neutral-700">
+                <label
+                  htmlFor={"email"}
+                  className="block text-sm font-medium text-neutral-700"
+                >
                   Email
                 </label>
                 <div className="mt-1">
@@ -124,7 +133,10 @@ export default function Index() {
               </div>
 
               <div>
-                <label htmlFor={"password"} className="block text-sm font-semibold text-neutral-600">
+                <label
+                  htmlFor={"password"}
+                  className="block text-sm font-semibold text-neutral-600"
+                >
                   Password
                 </label>
                 <div className="relative mt-1">
@@ -137,10 +149,10 @@ export default function Index() {
                     }
                     {...register("password")}
                   />
-                  <div className="absolute inset-y-0 right-0 flex cursor-pointer items-center pr-3">
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer">
                     <svg
                       onClick={() => setHidePassword(!hidePassword)}
-                      className="h-5 w-5 text-neutral-400"
+                      className="w-5 h-5 text-neutral-400"
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 20 20"
                       fill="currentColor"
@@ -193,12 +205,19 @@ export default function Index() {
                 >
                   {submitted ? (
                     <svg
-                      className="-ml-1 mr-3 h-5 w-5 animate-spin"
+                      className="w-5 h-5 mr-3 -ml-1 animate-spin"
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
                     >
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
                       <path
                         className="opacity-75"
                         fill="currentColor"
@@ -228,7 +247,9 @@ export default function Index() {
             <Link
               href={"/auth/signup"}
               passHref
-              className={"text-sm text-neutral-500 underline transition ease-in-out hover:text-neutral-500"}
+              className={
+                "text-sm text-neutral-500 underline transition ease-in-out hover:text-neutral-500"
+              }
             >
               Want to create an account instead?
             </Link>

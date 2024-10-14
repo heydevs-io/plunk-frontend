@@ -1,6 +1,6 @@
-import useSWR from 'swr';
-import {Action, Template} from '@prisma/client';
-import {useActiveProject} from './projects';
+import useSWR from "swr";
+import type { Action, Template } from "@prisma/client";
+import { useActiveProject } from "./projects";
 
 /**
  *
