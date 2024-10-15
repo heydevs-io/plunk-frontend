@@ -132,7 +132,7 @@ export const EmailEditor = ({
       >
         Email Body
       </label>
-      <div className="flex justify-end gap-4 mr-1">
+      <div className="flex justify-end gap-4 mb-4 mr-1">
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.9 }}
@@ -149,7 +149,12 @@ export const EmailEditor = ({
         ref={emailEditorRef}
         minHeight={1000}
         options={{
+          projectId: 253382,
+          id: "editor-container",
           displayMode: "email",
+          editor: {
+            confirmOnDelete: false,
+          },
         }}
         onLoad={onLoad}
         onReady={onReady}
