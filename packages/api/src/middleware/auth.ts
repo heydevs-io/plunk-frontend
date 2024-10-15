@@ -26,6 +26,12 @@ export interface IKey {
  * @param next
  */
 export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+	if(req.headers['x-auth-token']) {
+		res.locals.auth = { type: "jwt", userId: parseJwtAuthKey(req) };
+
+		return next();
+	}
+
 	res.locals.auth = { type: "jwt", userId: parseJwt(req) };
 
 	next();
@@ -47,6 +53,37 @@ export const isValidKey = (req: Request, res: Response, next: NextFunction) => {
 	res.locals.auth = { type: "key", key: parseBearer(req) };
 
 	next();
+};
+
+/**
+ * Middleware to validate the secret key in the x-secret-key header
+ * @param req
+ * @param res
+ * @param next
+ */
+export const isValidInternalSecretKey = (req: Request, res: Response, next: NextFunction) => {
+  const secretKey = req.header('x-secret-key');
+
+  if (!secretKey) {
+    throw new HttpException(401, "Missing x-secret-key header");
+  }
+
+  if (!secretKey.startsWith('sk_itn_')) {
+    throw new HttpException(401, "Invalid secret key format. Secret keys should start with 'sk_itn'");
+  }
+
+  // TODO: Add logic to validate the secret key against your database or configuration
+	const internalSecretKey = process.env.INTERNAL_SECRET_KEY;
+
+  if (!internalSecretKey) {
+    throw new HttpException(500, "Internal server error: INTERNAL_SECRET_KEY not set");
+  }
+
+  if (secretKey !== internalSecretKey) {
+    throw new HttpException(401, "Invalid secret key");
+  }
+
+  next();
 };
 
 export const jwt = {
@@ -91,6 +128,26 @@ export const jwt = {
  */
 export function parseJwt(request: Request): string {
 	const token: string | undefined = request.cookies.token;
+
+	if (!token) {
+		throw new NotAuthenticated();
+	}
+
+	const id = jwt.verify(token);
+
+	if (!id) {
+		throw new NotAuthenticated();
+	}
+
+	return id;
+}
+
+/**
+ * Parse a unsubscribe's ID from the request JWT token
+ * @param request The express request object
+ */
+export function parseJwtAuthKey(request: Request): string {
+	const token: string | undefined = request.header('x-auth-token');
 
 	if (!token) {
 		throw new NotAuthenticated();
