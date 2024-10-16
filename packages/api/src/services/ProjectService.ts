@@ -407,17 +407,35 @@ export class ProjectService {
 		});
 	}
 
-	public static campaignsV2(id: string) {
-		return wrapRedis(Keys.Project.campaigns(id), async () => {
-			return prisma.project.findUnique({ where: { id } }).campaigns({
+	public static async campaignsV2(projectId: string, page: number, pageSize: number) {
+		const skip = (page - 1) * pageSize;
+		
+		const [campaigns, totalCount] = await Promise.all([
+			prisma.campaign.findMany({
+				where: { projectId },
+				skip,
+				take: pageSize,
+				orderBy: { createdAt: 'desc' },
 				include: {
-					recipients: { select: { id: true } },
-					// emails: { select: { id: true, status: true } },
-					tasks: { select: { id: true } },
+					// Include any necessary relations
+					emails: true,
+					tasks: true,
+					recipients: true,
 				},
-				orderBy: { createdAt: "desc" },
-			});
-		});
+			}),
+			prisma.campaign.count({ where: { projectId } }),
+		]);
+
+		// return { campaigns, totalCount };
+		return {
+      campaigns,
+      pagination: {
+        currentPage: page,
+        pageSize,
+        totalCount,
+        totalPages: Math.ceil(totalCount / pageSize),
+      },
+    };
 	}
 
 	public static analytics(params: {
