@@ -26,10 +26,54 @@ export class CampaignService {
       return prisma.campaign.findUnique({
         where: { id },
         include: {
-          recipients: { select: { id: true } },
+          // recipients: { select: { id: true } },
         },
       });
     });
+  }
+
+  public static async getRecipients(campaignId: string, page: number = 1, pageSize: number = 10) {
+    const offset = (page - 1) * pageSize;
+  
+    const [recipients, totalCount] = await Promise.all([
+      prisma.contact.findMany({
+        where: {
+          campaigns: {
+            some: {
+              id: campaignId
+            }
+          }
+        },
+        select: {
+          id: true,
+          email: true,
+          data: true,
+          subscribed: true
+        },
+        skip: offset,
+        take: pageSize,
+        orderBy: { email: 'asc' },
+      }),
+      prisma.contact.count({
+        where: {
+          campaigns: {
+            some: {
+              id: campaignId
+            }
+          }
+        }
+      })
+    ]);
+  
+    return {
+      recipients,
+      pagination: {
+        currentPage: page,
+        pageSize,
+        totalCount,
+        totalPages: Math.ceil(totalCount / pageSize),
+      },
+    };
   }
 
   public static async emailsV2(
