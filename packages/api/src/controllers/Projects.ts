@@ -385,6 +385,7 @@ export class Projects {
 	@Middleware([isAuthenticated])
 	public async getProjectCampaignsByIDV2(req: Request, res: Response) {
 		const { id: projectId } = UtilitySchemas.id.parse(req.params);
+		const { page } = UtilitySchemas.pagination.parse(req.query);
 
 		const { userId } = res.locals.auth as IJwt;
 
@@ -400,9 +401,11 @@ export class Projects {
 			throw new NotAllowed();
 		}
 
-		const campaigns = await ProjectService.campaignsV2(projectId);
+		const  campaigns  = await ProjectService.campaignsV2(projectId, page, 20);
 
-		return res.status(200).json(campaigns);
+		return res.status(200).json(
+			campaigns,
+		);
 	}
 
 
