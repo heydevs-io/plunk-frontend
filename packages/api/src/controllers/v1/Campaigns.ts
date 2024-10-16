@@ -40,7 +40,7 @@ export class Campaigns {
 		});
 	}
 
-	@Get("info/:id")
+	@Get(":id/info")
 	@Middleware([isAuthenticated])
 	public async getCampaignByIdV2(req: Request, res: Response) {
 		const { id } = UtilitySchemas.id.parse(req.params);
@@ -62,7 +62,33 @@ export class Campaigns {
 		return res.status(200).json(campaign);
 	}
 
-	@Get("info/:id/emails")
+	@Get(":id/info/recipients")
+	@Middleware([isAuthenticated])
+	public async getCampaignRecipients(req: Request, res: Response) {
+		const { id } = UtilitySchemas.id.parse(req.params);
+
+		const { userId } = res.locals.auth as IJwt;
+
+		const campaign = await CampaignService.idV2(id);
+
+		if (!campaign) {
+			throw new NotFound("campaign");
+		}
+
+		const isMember = await MembershipService.isMember(campaign.projectId, userId);
+
+		if (!isMember) {
+			throw new NotFound("campaign");
+		}
+
+		const { page = 1, pageSize = 10 } = req.query;
+
+		const recipients = await CampaignService.getRecipients(campaign.id, Number(page), Number(pageSize));
+
+		return res.status(200).json(recipients);
+	}
+
+	@Get(":id/info/emails")
 	@Middleware([isAuthenticated])
 	public async getCampaignEmails(req: Request, res: Response) {
 		const { id } = UtilitySchemas.id.parse(req.params);
@@ -238,7 +264,7 @@ export class Campaigns {
 			throw new NotFound("project");
 		}
 
-		let { subject, body, recipients, style, email, from, emailJson } = CampaignSchemas.create.parse(req.body);
+		let { subject, body, recipients, style, email, from, emailJson, description } = CampaignSchemas.create.parse(req.body);
 
 		if (email && !project.verified) {
 			throw new NotAllowed("You need to attach a domain to your project to customize the sender address");
@@ -266,6 +292,7 @@ export class Campaigns {
 				from: from === "" ? null : from,
 				email: email === "" ? null : email,
 				emailJson: emailJson ? JSON.stringify(emailJson) : null,
+				description: description === "" ? null : description,
 			},
 		});
 
@@ -322,7 +349,7 @@ export class Campaigns {
 			throw new NotFound("project");
 		}
 
-		let { id, subject, body, recipients, style, email, from, emailJson } = CampaignSchemas.update.parse(req.body);
+		let { id, subject, body, recipients, style, email, from, emailJson, description } = CampaignSchemas.update.parse(req.body);
 
 		if (email && !project.verified) {
 			throw new NotAllowed("You need to attach a domain to your project to customize the sender address");
@@ -356,6 +383,7 @@ export class Campaigns {
 				from: from === "" ? null : from,
 				email: email === "" ? null : email,
 				emailJson: emailJson ? JSON.stringify(emailJson) : null,
+				description: description === "" ? null : description,
 			},
 			include: {
 				recipients: { select: { id: true } },

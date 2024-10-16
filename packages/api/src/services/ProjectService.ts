@@ -418,17 +418,22 @@ export class ProjectService {
 				orderBy: { createdAt: 'desc' },
 				include: {
 					// Include any necessary relations
-					emails: true,
-					tasks: true,
-					recipients: true,
+					// emails: true,
+					tasks: {select: {id: true}},
+					_count: {
+						select: { recipients: true }
+					}
 				},
 			}),
 			prisma.campaign.count({ where: { projectId } }),
 		]);
 
-		// return { campaigns, totalCount };
 		return {
-      campaigns,
+			campaigns: campaigns.map(campaign => ({
+				...campaign,
+				recipientsNumber: campaign._count.recipients,
+				_count: undefined,
+			})),
       pagination: {
         currentPage: page,
         pageSize,

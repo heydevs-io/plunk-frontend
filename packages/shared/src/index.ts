@@ -206,6 +206,7 @@ export const CampaignSchemas = {
     recipients: z.array(z.string()),
     style: z.nativeEnum(TemplateStyle).default("PLUNK"),
     emailJson: z.record(z.unknown()).nullable().or(z.string()),
+    description: z.string().nullish(),
   }),
   update: z.object({
     id,
@@ -219,6 +220,7 @@ export const CampaignSchemas = {
     recipients: z.array(z.string()),
     style: z.nativeEnum(TemplateStyle).default("PLUNK"),
     emailJson: z.record(z.unknown()).nullable().or(z.string()),
+    description: z.string().nullish(),
   }),
 };
 
