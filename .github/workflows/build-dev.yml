@@ -1,0 +1,73 @@
+name: 'Dev Deployment'
+
+on:
+  push:
+    branches:
+      - develop
+
+env:
+  NAME: blox3-v1-prod
+  ZONE: asia-southeast1-a
+  SVC_NAME: plunk-service
+  IMAGE_REPO: ${{ vars.ECR_URL }}/plunk-service-dev
+
+jobs:
+  build-deploy:
+    name: Build and deploy application to server
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+          token: ${{ secrets.MY_REPO_PAT_NEW }}
+
+      - name: Fetch latest changes
+        run: git fetch
+
+      - name: Checkout latest code
+        run: |
+          git fetch --all
+          git checkout -B develop origin/develop
+
+      - name: Log latest commit message
+        run: |
+          echo "Latest commit message:"
+          git log -1 --pretty=%B
+
+      - name: Build Docker
+        run: |
+          git log -1  # This will show the latest commit hash for verification
+          docker build -t ${{ env.IMAGE_REPO }}:latest .
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_NEW }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_NEW }}
+          aws-region: ap-southeast-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Upload to ECR
+        run: |
+          docker push $IMAGE_REPO:latest
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ vars.DEPLOY_SERVER }}
+          port: ${{ vars.SSH_PORT }}
+          username: ${{vars.SSH_USER}}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            aws ecr get-login-password --region ap-southeast-1 | \
+            docker login --username AWS --password-stdin ${{ vars.ECR_URL }}
+            docker tag ${{ env.IMAGE_REPO }}:latest ${{ env.IMAGE_REPO }}:backup
+            docker pull ${{ env.IMAGE_REPO }}:latest
+            cd /home/massbit/heydevs_dev/heydevs-environment && git pull
+            docker-compose -f /home/massbit/heydevs_dev/docker-compose.yml stop ${{ env.SVC_NAME }} || true
+            docker-compose -f /home/massbit/heydevs_dev/docker-compose.yml rm -f ${{ env.SVC_NAME }} || true
+            docker-compose -f /home/massbit/heydevs_dev/docker-compose.yml up -d ${{ env.SVC_NAME }}
