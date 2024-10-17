@@ -1,4 +1,4 @@
-import React from "react";
+import type { ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 export interface ModalProps {
@@ -6,11 +6,12 @@ export interface ModalProps {
   description?: string;
   isOpen: boolean;
   onToggle: () => void;
-  onAction: () => void;
-  children?: React.ReactNode;
+  onAction?: () => void;
+  children?: ReactNode;
   action?: string;
   type: "info" | "danger";
-  icon?: React.ReactNode;
+  icon?: ReactNode;
+  isActionDisabled?: boolean; // Add this new optional prop
 }
 
 /**
@@ -35,6 +36,7 @@ export default function Modal({
   action,
   type,
   icon,
+  isActionDisabled,
 }: ModalProps) {
   return (
     <AnimatePresence>
@@ -68,7 +70,7 @@ export default function Modal({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.7 }}
               transition={{ ease: "easeInOut", duration: 0.15 }}
-              className="relative z-40 inline-block px-8 py-10 overflow-hidden overflow-visible text-left align-bottom transform bg-white border border-black rounded-lg shadow-2xl border-opacity-5 sm:my-8 sm:w-full sm:max-w-xl sm:align-middle"
+              className="relative z-40 inline-block px-8 py-10 overflow-visible text-left align-bottom transform bg-white border border-black rounded-lg shadow-2xl border-opacity-5 sm:my-8 sm:w-full sm:max-w-xl sm:align-middle"
             >
               <div className="absolute top-0 right-0 hidden p-8 sm:block">
                 <button
@@ -157,34 +159,40 @@ export default function Modal({
                   {children}
                 </div>
               </div>
-              <div
-                className={`${
-                  children ? "mt-5" : ""
-                } sm:flex sm:flex-row-reverse`}
-              >
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  type="button"
+              {onAction && (
+                <div
                   className={`${
-                    type === "info"
-                      ? "bg-neutral-800 focus:ring-neutral-800"
-                      : "bg-red-600 hover:bg-red-700 focus:ring-red-500"
-                  } inline-flex w-full justify-center rounded border border-transparent px-6 py-2 text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm`}
-                  onClick={onAction}
+                    children ? "mt-5" : ""
+                  } sm:flex sm:flex-row-reverse`}
                 >
-                  {action ? action : "Confirm"}
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  type="button"
-                  className="inline-flex justify-center w-full px-6 py-2 mt-3 text-base font-medium bg-white border rounded border-neutral-300 text-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:ring-offset-2 sm:mt-0 sm:w-auto sm:text-sm"
-                  onClick={onToggle}
-                >
-                  Cancel
-                </motion.button>
-              </div>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    type="button"
+                    className={`${
+                      type === "info"
+                        ? "bg-neutral-800 focus:ring-neutral-800"
+                        : "bg-red-600 hover:bg-red-700 focus:ring-red-500"
+                    } inline-flex w-full justify-center rounded border border-transparent px-6 py-2 text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm ${
+                      isActionDisabled ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                    onClick={onAction}
+                    disabled={isActionDisabled}
+                  >
+                    {action ? action : "Confirm"}
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    type="button"
+                    className="inline-flex justify-center w-full px-6 py-2 mt-3 text-base font-medium bg-white border rounded border-neutral-300 text-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:ring-offset-2 sm:mt-0 sm:w-auto sm:text-sm"
+                    onClick={onToggle}
+                  >
+                    Cancel
+                  </motion.button>
+                </div>
+              )}
             </motion.div>
           </div>
         </div>
