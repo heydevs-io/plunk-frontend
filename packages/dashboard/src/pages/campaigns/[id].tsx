@@ -30,15 +30,6 @@ import { useEventsWithoutTriggers } from "../../lib/hooks/events";
 import { useActiveProject } from "../../lib/hooks/projects";
 import { network } from "../../lib/network";
 
-interface CampaignValues {
-  subject: string;
-  body: string;
-  email?: string;
-  from?: string;
-  recipients: string[];
-  style: "PLUNK" | "HTML";
-}
-
 /**
  *
  */
@@ -61,7 +52,7 @@ export default function Index() {
     events?: string[];
     last?: "day" | "week" | "month";
     data?: string;
-    value?: string;
+    value?: string[];
     notevents?: string[];
     notlast?: "day" | "week" | "month";
   }>({});
@@ -129,6 +120,7 @@ export default function Index() {
     }
 
     let filteredContacts = contacts.contacts;
+    const { data, value } = query;
 
     if (query.events && query.events.length > 0) {
       query.events.map((e) => {
@@ -204,25 +196,27 @@ export default function Index() {
       });
     }
 
-    if (query.data) {
+    if (data) {
       filteredContacts = filteredContacts.filter((c) => {
         if (!c.data) {
           return false;
         }
 
-        return JSON.parse(c.data)[query.data as string];
+        return JSON.parse(c.data)[data];
       });
     }
 
-    if (query.data && query.value) {
+    if (data && value && value.length > 0 && !value.includes("any")) {
       filteredContacts = filteredContacts.filter((c) => {
         if (!c.data) {
           return false;
         }
 
-        return Array.isArray(JSON.parse(c.data)[query.data as string])
-          ? JSON.parse(c.data)[query.data as string].includes(query.value)
-          : JSON.parse(c.data)[query.data as string] === query.value;
+        const parsedData = JSON.parse(c.data)[data]; // Extracted parsed data
+        return Array.isArray(parsedData)
+          ? parsedData.includes(value)
+          : //   : parsedData === value;
+            value.includes(parsedData); // Reused parsed data
       });
     }
 
@@ -853,41 +847,56 @@ export default function Index() {
                               All contacts where parameter {query.data} is
                             </label>
 
-                            <Dropdown
-                              onChange={(e) =>
-                                setQuery({
-                                  ...query,
-                                  value: e === "" ? undefined : e,
-                                })
-                              }
+                            <MultiselectDropdown
+                              onChange={(values) => {
+                                setQuery((prevQuery) => {
+                                  const isAnyPreviouslySelected =
+                                    prevQuery.value?.includes("any");
+                                  const isAnySelectedNow =
+                                    values.includes("any");
+
+                                  let newValue: string[];
+
+                                  if (isAnyPreviouslySelected) {
+                                    // If 'any' was previously selected and now another item is selected,
+                                    // remove 'any' and use the new values
+                                    newValue = values.filter(
+                                      (v) => v !== "any"
+                                    );
+                                  } else if (isAnySelectedNow) {
+                                    // If 'any' is selected now, make it the only selection
+                                    newValue = ["any"];
+                                  } else {
+                                    // Otherwise, use the new selection
+                                    newValue = values;
+                                  }
+
+                                  return { ...prevQuery, value: newValue };
+                                });
+                              }}
                               values={[
-                                { name: "Any value", value: "" },
-                                ...new Set(
-                                  contacts.contacts
-                                    .filter(
-                                      (c) =>
-                                        c.data &&
-                                        JSON.parse(c.data)[query.data ?? ""]
-                                    )
-                                    .map((c) => {
-                                      return JSON.parse(c.data ?? "{}")[
-                                        query.data ?? ""
-                                      ];
-                                    })
-                                    .reduce((acc, val) => acc.concat(val), [])
-                                ),
-                              ].map((k) =>
-                                typeof k === "string"
-                                  ? {
-                                      name: k,
-                                      value: k,
-                                    }
-                                  : (k as {
-                                      name: string;
-                                      value: string;
-                                    })
-                              )}
-                              selectedValue={query.value ?? ""}
+                                { name: "Any value", value: "any" },
+                                ...Array.from(
+                                  new Set(
+                                    contacts.contacts
+                                      .filter(
+                                        (c) =>
+                                          c.data &&
+                                          JSON.parse(c.data)[query.data ?? ""]
+                                      )
+                                      .flatMap(
+                                        (c) =>
+                                          JSON.parse(c.data ?? "{}")[
+                                            query.data ?? ""
+                                          ]
+                                      )
+                                  )
+                                ).map((value) => ({
+                                  name: String(value),
+                                  value: String(value),
+                                })),
+                              ]}
+                              selectedValues={query.value ?? []}
                             />
                           </>
                         )}

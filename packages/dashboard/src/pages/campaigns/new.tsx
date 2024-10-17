@@ -26,15 +26,6 @@ import { useEventsWithoutTriggers } from "../../lib/hooks/events";
 import { useActiveProject } from "../../lib/hooks/projects";
 import { network } from "../../lib/network";
 
-interface CampaignValues {
-  subject: string;
-  body: string;
-  email?: string;
-  from?: string;
-  recipients: string[];
-  style: "PLUNK" | "HTML";
-}
-
 const templates = {
   blank: {
     subject: "",
