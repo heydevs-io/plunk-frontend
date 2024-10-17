@@ -57,6 +57,8 @@ const contactType = z
   .optional()
   .transform((value) => (value ? value.split("|").map((v) => v.trim()) : []));
 
+const search = z.string().optional();
+
 export const UtilitySchemas = {
   id: z.object({
     id,
@@ -71,6 +73,7 @@ export const UtilitySchemas = {
     phoneCode,
     phone,
     contactType,
+		search,
   }),
   pagination: z.object({
     page: z
