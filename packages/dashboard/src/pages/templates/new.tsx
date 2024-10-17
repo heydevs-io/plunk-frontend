@@ -93,7 +93,6 @@ export default function Index() {
    * @returns A promise that resolves when the template is created and the user is redirected to the templates page.
    */
   const create: FirstParams<typeof handleSubmit> = async (data) => {
-    // console.log("🚀 ~ create ~ data:", data);
     toast.promise(
       network.mock<Template, typeof TemplateSchemas.create>(
         project.secret,
