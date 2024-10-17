@@ -54,6 +54,7 @@ export class ProjectService {
 			phoneCode?: string[];
 			phone?: string[];
 			contactType?: string[];
+			search?: string;
 		}) => {
 			const conditions: any[] = [];
 	
@@ -102,6 +103,16 @@ export class ProjectService {
     conditions.push({ OR: contactTypeConditions });
   }
 
+	// Add search condition
+	if (filters.search) {
+		conditions.push({
+			OR: [
+				{ email: { contains: filters.search, mode: 'insensitive' } },
+				{ data: { contains: filters.search, mode: 'insensitive' } }
+			]
+		});
+	}
+
   return conditions.length > 0 ? { AND: conditions } : {};
 		},
     get: (
@@ -113,6 +124,7 @@ export class ProjectService {
         phoneCode?: string[];
         phone?: string[];
         contactType?: string[];
+				search?: string;
       }
     ) => {
       return wrapRedis(Keys.Project.contacts(id), async () => {

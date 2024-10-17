@@ -294,7 +294,7 @@ export class Projects {
     const { id: projectId } = UtilitySchemas.id.parse(req.params);
     const { page } = UtilitySchemas.pagination.parse(req.query);
 
-    const { firstName, lastName, gender, phone, phoneCode, contactType } =
+    const { firstName, lastName, gender, phone, phoneCode, contactType, search } =
       UtilitySchemas.filters.parse(req.query);
 
     const { userId } = res.locals.auth as IJwt;
@@ -318,6 +318,7 @@ export class Projects {
       phoneCode,
       phone,
       contactType,
+			search,
     };
 
     if (page === 0) {

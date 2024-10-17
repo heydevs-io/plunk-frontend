@@ -15,9 +15,9 @@ export class UserService {
 		});
 	}
 
-	public static email(email: string) {
-		return wrapRedis(Keys.User.email(email), () => {
-			return prisma.user.findUnique({
+	public static async email(email: string) {
+		return wrapRedis(Keys.User.email(email), async () => {
+			return await prisma.user.findUnique({
 				where: { email },
 			});
 		});
