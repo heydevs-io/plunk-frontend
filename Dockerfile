@@ -1,5 +1,5 @@
 # Base Stage
-FROM node:lts-alpine3.20 AS base
+FROM node:alpine AS base
 
 WORKDIR /app
 

@@ -38,7 +38,7 @@ jobs:
       - name: Build Docker
         run: |
           git log -1  # This will show the latest commit hash for verification
-          docker build -t ${{ env.IMAGE_REPO }}:latest .
+          docker build -t ${{ env.IMAGE_REPO }}:latest -f Dockerfile.api .
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
