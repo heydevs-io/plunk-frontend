@@ -8,8 +8,8 @@ on:
 env:
   NAME: blox3-v1-prod
   ZONE: asia-southeast1-a
-  SVC_NAME: plunk-service
-  IMAGE_REPO: ${{ vars.ECR_URL }}/plunk-service-dev
+  SVC_NAME: plunk-api
+  IMAGE_REPO: ${{ vars.ECR_URL }}/plunk-api-dev
 
 jobs:
   build-deploy:

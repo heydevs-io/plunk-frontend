@@ -23,6 +23,7 @@ import { Internal } from "./controllers/internal";
 import { V1 } from "./controllers/v1";
 import { prisma } from "./database/prisma";
 import { HttpException } from "./exceptions";
+import { Health } from "./controllers/Health";
 
 const server = new (class extends Server {
 	public constructor() {
@@ -73,7 +74,8 @@ const server = new (class extends Server {
 			new Identities(),
 			new Tasks(),
 			new V1(),
-			new Internal()
+			new Internal(),
+			new Health(),
 		]);
 
 		this.app.use("*", () => {

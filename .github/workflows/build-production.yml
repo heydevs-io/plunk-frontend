@@ -8,8 +8,8 @@ on:
 env:
   NAME: blox3-v1-prod
   ZONE: asia-southeast1-a
-  SVC_NAME: plunk-service
-  IMAGE_REPO: ${{ vars.ECR_URL }}/plunk-service
+  SVC_NAME: plunk-api
+  IMAGE_REPO: ${{ vars.ECR_URL }}/plunk-api
 
 jobs:
   build-deploy:
@@ -55,7 +55,7 @@ jobs:
         run: |
           docker push $IMAGE_REPO:latest
 
-      # - name: Deploy to EKS
-      #   run: |
-      #     aws eks update-kubeconfig --region ap-southeast-1 --name eksBitcoin
-      #     kubectl rollout restart deploy/plunk-service -n nimspace-production
+      - name: Deploy to EKS
+        run: |
+          aws eks update-kubeconfig --region ap-southeast-1 --name eksBitcoin
+          kubectl rollout restart deploy/plunk-api -n nimspace-production
