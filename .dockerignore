@@ -4,3 +4,4 @@
 dist/
 assets/
 node_modules/
+.vscode/
