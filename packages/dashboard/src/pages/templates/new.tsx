@@ -19,15 +19,6 @@ import { useActiveProject } from "../../lib/hooks/projects";
 import { useTemplates } from "../../lib/hooks/templates";
 import { network } from "../../lib/network";
 
-interface TemplateValues {
-  subject: string;
-  body: string;
-  email?: string;
-  from?: string;
-  type: "MARKETING" | "TRANSACTIONAL";
-  style: "PLUNK" | "HTML";
-}
-
 const templates = {
   blank: {
     subject: "",
