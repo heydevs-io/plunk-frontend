@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import {
   Card,
   Dropdown,
+  Editor,
   EmailEditor,
   FullscreenLoader,
   Input,
@@ -344,13 +345,22 @@ export default function Index() {
             )}
 
             <div className={"sm:col-span-6"}>
-              <EmailEditor
+              {/* <EmailEditor
                 htmlOnChange={(value) => {
                   setValue("body", value);
                 }}
                 jsonValue={template?.emailJson}
                 jsonOnChange={(value) => {
                   setValue("emailJson", value);
+                }}
+              /> */}
+              <Editor
+                value={watch("body")}
+                mode={watch("style")}
+                modeSwitcher
+                onChange={(value, type) => {
+                  setValue("style", type);
+                  setValue("body", value);
                 }}
               />
               <AnimatePresence>

@@ -16,6 +16,7 @@ import {
   Badge,
   Card,
   Dropdown,
+  Editor,
   EmailEditor,
   FullscreenLoader,
   Input,
@@ -1046,7 +1047,7 @@ export default function Index() {
               ))}
 
             <div className={"sm:col-span-6"}>
-              <EmailEditor
+              {/* <EmailEditor
                 htmlOnChange={(value) => {
                   setValue("body", value);
                 }}
@@ -1054,6 +1055,15 @@ export default function Index() {
                 jsonOnChange={(value) => {
                   setValue("emailJson", value);
                 }}
+              /> */}
+              <Editor
+                value={watch("body")}
+                mode={watch("style")}
+                onChange={(value, type) => {
+                  setValue("body", value);
+                  setValue("style", type);
+                }}
+                modeSwitcher={campaign.status === "DRAFT"}
               />
               <AnimatePresence>
                 {errors.body?.message && (
