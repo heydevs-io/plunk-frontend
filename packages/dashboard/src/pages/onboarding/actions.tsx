@@ -164,7 +164,6 @@ export default function Index() {
         activeProject.secret,
         "POST",
         "/v1/templates",
-        // @ts-expect-error Property 'emailJson' is missing in type 'TemplateValues' but required in type '{ type: "MARKETING" | "TRANSACTIONAL"; subject: string; body: string; style: "PLUNK" | "HTML"; emailJson: string | Record<string, unknown> | null; email?: string | null | undefined; from?: string | ... 1 more ... | undefined; }'.
         data
       ),
       {
