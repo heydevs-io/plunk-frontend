@@ -62,14 +62,17 @@ export const useAutoSaveDraftByTime = ({
   const [id, setId] = useState(draftId);
 
   useEffect(() => {
-    const isValid =
+    const { email, subject, body, style, emailJson } = formData;
+
+    const isValid = !!(
       isRunning &&
       projectSecret &&
       Object.keys(errors).length === 0 &&
-      formData.email &&
-      formData.subject &&
-      formData.emailJson &&
-      formData.body;
+      email &&
+      subject &&
+      body &&
+      (style === "PLUNK" ? emailJson : true)
+    );
 
     if (isValid) {
       const saveDraft = async () => {
