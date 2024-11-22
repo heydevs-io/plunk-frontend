@@ -24,7 +24,11 @@ import {
   Table,
 } from "../../components";
 import { Dashboard } from "../../layouts";
-import { useCampaign, useCampaigns } from "../../lib/hooks/campaigns";
+import {
+  useAutoSaveDraftByTime,
+  useCampaign,
+  useCampaigns,
+} from "../../lib/hooks/campaigns";
 import { useContacts } from "../../lib/hooks/contacts";
 import { useEventsWithoutTriggers } from "../../lib/hooks/events";
 import { useActiveProject } from "../../lib/hooks/projects";
@@ -71,6 +75,15 @@ export default function Index() {
     clearErrors,
   } = useZodForm(CampaignSchemas.update, {
     defaultValues: { recipients: [], body: undefined },
+  });
+
+  useAutoSaveDraftByTime({
+    draftId: campaign?.id,
+    formData: watch(),
+    projectSecret: project?.secret || "",
+    errors,
+    contacts: contacts?.contacts || [],
+    isRunning: !!(campaign?.id && campaign.status === "DRAFT"),
   });
 
   useEffect(() => {
