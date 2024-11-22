@@ -1,5 +1,5 @@
 import { CampaignSchemas } from "@plunk/shared";
-import type { Campaign } from "@prisma/client";
+import type { Campaign, Contact } from "@prisma/client";
 import { Ring } from "@uiball/loaders";
 import { useZodForm } from "dashboard/src/hook";
 import type { FirstParams } from "dashboard/src/models/utility.types";
@@ -21,11 +21,15 @@ import {
   MultiselectDropdown,
 } from "../../components";
 import { Dashboard } from "../../layouts";
-import { useCampaigns } from "../../lib/hooks/campaigns";
+import {
+  useCampaigns,
+  useAutoSaveDraftByTime,
+} from "../../lib/hooks/campaigns";
 import { useContacts } from "../../lib/hooks/contacts";
 import { useEventsWithoutTriggers } from "../../lib/hooks/events";
 import { useActiveProject } from "../../lib/hooks/projects";
 import { network } from "../../lib/network";
+import { formatData } from "dashboard/src/lib/utils/campaigns";
 
 const templates = {
   blank: {
@@ -69,6 +73,14 @@ export default function Index() {
       ...templates.blank,
       style: "PLUNK",
     },
+  });
+
+  const { id: draftId } = useAutoSaveDraftByTime({
+    formData: watch(),
+    projectSecret: project?.secret || "",
+    errors,
+    contacts: contacts?.contacts || [],
+    isRunning: true,
   });
 
   useEffect(() => {
@@ -210,18 +222,22 @@ export default function Index() {
   };
 
   const create: FirstParams<typeof handleSubmit> = async (data) => {
+    const newData = formatData(data, contacts?.contacts || []);
+
     toast.promise(
-      network.mock<Campaign, typeof CampaignSchemas.create>(
-        project.secret,
-        "POST",
-        "/v1/campaigns",
-        data.recipients.length ===
-          contacts?.contacts.filter((c) => c.subscribed).length
-          ? { ...data, recipients: ["all"] }
-          : {
-              ...data,
-            }
-      ),
+      draftId
+        ? network.mock<Campaign, typeof CampaignSchemas.update>(
+            project.secret,
+            "PUT",
+            "/v1/campaigns",
+            { ...newData, id: draftId }
+          )
+        : network.mock<Campaign, typeof CampaignSchemas.create>(
+            project.secret,
+            "POST",
+            "/v1/campaigns",
+            newData
+          ),
       {
         loading: "Creating new campaign",
         success: () => {
@@ -253,23 +269,22 @@ export default function Index() {
               />
 
               {project.verified && (
-                <Input
-                  className={"sm:col-span-3"}
-                  label={"Sender Email"}
-                  placeholder={`${project.email}`}
-                  register={register("email")}
-                  error={errors.email}
-                />
-              )}
-
-              {project.verified && (
-                <Input
-                  className={"sm:col-span-3"}
-                  label={"Sender Name"}
-                  placeholder={`${project.from ?? project.name}`}
-                  register={register("from")}
-                  error={errors.from}
-                />
+                <>
+                  <Input
+                    className={"sm:col-span-3"}
+                    label={"Sender Email"}
+                    placeholder={`${project.email}`}
+                    register={register("email")}
+                    error={errors.email}
+                  />
+                  <Input
+                    className={"sm:col-span-3"}
+                    label={"Sender Name"}
+                    placeholder={`${project.from ?? project.name}`}
+                    register={register("from")}
+                    error={errors.from}
+                  />
+                </>
               )}
             </div>
 
