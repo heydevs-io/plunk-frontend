@@ -73,7 +73,7 @@ export const UtilitySchemas = {
     phoneCode,
     phone,
     contactType,
-		search,
+    search,
   }),
   pagination: z.object({
     page: z
@@ -208,7 +208,7 @@ export const CampaignSchemas = {
     from: z.string().nullish(),
     recipients: z.array(z.string()),
     style: z.nativeEnum(TemplateStyle).default("PLUNK"),
-    emailJson: z.record(z.unknown()).nullable().or(z.string()),
+    emailJson: z.record(z.unknown()).nullable().or(z.string()).optional(),
     description: z.string().nullish(),
   }),
   update: z.object({
@@ -222,7 +222,7 @@ export const CampaignSchemas = {
     from: z.string().nullish(),
     recipients: z.array(z.string()),
     style: z.nativeEnum(TemplateStyle).default("PLUNK"),
-    emailJson: z.record(z.unknown()).nullable().or(z.string()),
+    emailJson: z.record(z.unknown()).nullable().or(z.string()).optional(),
     description: z.string().nullish(),
   }),
 };
@@ -300,7 +300,7 @@ export const TemplateSchemas = {
     from: z.string().nullish(),
     type: z.nativeEnum(TemplateType).default("MARKETING"),
     style: z.nativeEnum(TemplateStyle).default("PLUNK"),
-    emailJson: z.record(z.unknown()).nullable().or(z.string()),
+    emailJson: z.record(z.unknown()).nullable().or(z.string()).optional(),
   }),
   update: z.object({
     id,
@@ -313,7 +313,7 @@ export const TemplateSchemas = {
     from: z.string().nullish(),
     type: z.nativeEnum(TemplateType).default("MARKETING"),
     style: z.nativeEnum(TemplateStyle).default("PLUNK"),
-    emailJson: z.record(z.unknown()).nullable().or(z.string()),
+    emailJson: z.record(z.unknown()).nullable().or(z.string()).optional(),
   }),
 };
 
