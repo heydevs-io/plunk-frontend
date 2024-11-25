@@ -38,7 +38,7 @@ export function useCampaigns() {
   >(activeProject ? `/projects/id/${activeProject.id}/campaigns` : null);
 }
 
-const TEN_MINUTES = 10 * 60 * 1000;
+const DEFAULT_AUTO_SAVE_INTERVAL = 10 * 60 * 1000;
 
 type AutoSaveDraftProps = {
   time?: number;
@@ -51,7 +51,7 @@ type AutoSaveDraftProps = {
 };
 
 export const useAutoSaveDraftByTime = ({
-  time = TEN_MINUTES,
+  time = DEFAULT_AUTO_SAVE_INTERVAL,
   formData,
   draftId,
   contacts,
