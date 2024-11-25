@@ -1,18 +1,28 @@
-import React, {ReactElement, useState} from 'react';
-import {useRouter} from 'next/router';
-import {AnimatePresence, motion} from 'framer-motion';
-import Link from 'next/link';
-import {ProjectSelector} from '../../index';
-import Image from 'next/image';
-import logo from '../../../../public/assets/logo.png';
-import {Home, LayoutTemplate, LineChart, LogOut, Send, Settings, TerminalSquare, Users2, Workflow} from 'lucide-react';
+import React, { ReactElement, useState } from "react";
+import { useRouter } from "next/router";
+import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
+import { ProjectSelector } from "../../index";
+import Image from "next/image";
+import logo from "../../../../public/assets/logo.png";
+import {
+  Home,
+  LayoutTemplate,
+  LineChart,
+  LogOut,
+  Send,
+  Settings,
+  TerminalSquare,
+  Users2,
+  Workflow,
+} from "lucide-react";
 
 interface SidebarLinkType {
   to: string;
   text: string;
   disabled: boolean;
   highlight?: boolean;
-  position: 'top' | 'bottom';
+  position: "top" | "bottom";
   icon: ReactElement;
 }
 
@@ -32,24 +42,24 @@ export interface SidebarProps {
 
 const links: SidebarLinkType[] = [
   {
-    to: '/',
-    text: 'Dashboard',
+    to: "/",
+    text: "Dashboard",
     disabled: false,
-    position: 'top',
+    position: "top",
     icon: <Home />,
   },
   {
-    to: '/contacts',
-    text: 'Contacts',
+    to: "/contacts",
+    text: "Contacts",
     disabled: false,
-    position: 'top',
+    position: "top",
     icon: <Users2 />,
   },
   {
-    to: '/analytics',
-    text: 'Analytics',
+    to: "/analytics",
+    text: "Analytics",
     disabled: false,
-    position: 'top',
+    position: "top",
     icon: <LineChart />,
   },
   // {
@@ -60,38 +70,38 @@ const links: SidebarLinkType[] = [
   //   icon: <TerminalSquare />,
   // },
   {
-    to: '/settings/project',
-    text: 'Project Settings',
+    to: "/settings/project",
+    text: "Project Settings",
     disabled: false,
-    position: 'top',
+    position: "top",
     icon: <Settings />,
   },
   {
-    to: '/events',
-    text: 'Events',
+    to: "/events",
+    text: "Events",
     disabled: false,
-    position: 'top',
+    position: "top",
     icon: <TerminalSquare />,
   },
   {
-    to: '/templates',
-    text: 'Templates',
+    to: "/templates",
+    text: "Templates",
     disabled: false,
-    position: 'top',
+    position: "top",
     icon: <LayoutTemplate />,
   },
   {
-    to: '/actions',
-    text: 'Actions',
+    to: "/actions",
+    text: "Actions",
     disabled: false,
-    position: 'top',
+    position: "top",
     icon: <Workflow />,
   },
   {
-    to: '/campaigns',
-    text: 'Campaigns',
+    to: "/campaigns",
+    text: "Campaigns",
     disabled: false,
-    position: 'top',
+    position: "top",
     icon: <Send />,
   },
 
@@ -117,22 +127,35 @@ const links: SidebarLinkType[] = [
  * @param root0.svgPath
  * @param root0.highlight
  */
-function SidebarLink({active, to, text, disabled, highlight, svgPath}: SidebarLinkProps) {
-  if (to.startsWith('http')) {
+function SidebarLink({
+  active,
+  to,
+  text,
+  disabled,
+  highlight,
+  svgPath,
+}: SidebarLinkProps) {
+  if (to.startsWith("http")) {
     return (
       <a
-        onClick={() => window.open(to, '_blank')?.focus()}
+        onClick={() => window.open(to, "_blank")?.focus()}
         className={`${
           active
-            ? 'cursor-default bg-neutral-100 text-neutral-700'
+            ? "cursor-default bg-neutral-100 text-neutral-700"
             : disabled
-              ? 'text-neutral-200'
-              : 'cursor-pointer text-neutral-400 hover:bg-neutral-50 hover:text-neutral-700'
+            ? "text-neutral-200"
+            : "cursor-pointer text-neutral-400 hover:bg-neutral-50 hover:text-neutral-700"
         } flex items-center gap-x-3 rounded p-2 text-sm font-medium transition ease-in-out`}
       >
-        <div className="flex h-5 w-5 items-center justify-center">{svgPath}</div>
+        <div className="flex h-5 w-5 items-center justify-center">
+          {svgPath}
+        </div>
         {text}
-        {highlight && <div className="ml-auto rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-800">New</div>}
+        {highlight && (
+          <div className="ml-auto rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-800">
+            New
+          </div>
+        )}
       </a>
     );
   }
@@ -142,15 +165,19 @@ function SidebarLink({active, to, text, disabled, highlight, svgPath}: SidebarLi
       href={to}
       className={`${
         active
-          ? 'cursor-default bg-neutral-100 text-neutral-700'
+          ? "cursor-default bg-neutral-100 text-neutral-700"
           : disabled
-            ? 'text-neutral-200'
-            : 'cursor-pointer text-neutral-400 hover:bg-neutral-50 hover:text-neutral-700'
+          ? "text-neutral-200"
+          : "cursor-pointer text-neutral-400 hover:bg-neutral-50 hover:text-neutral-700"
       } flex items-center gap-x-3 rounded p-2 text-sm font-medium transition ease-in-out`}
     >
       <div className="flex h-5 w-5 items-center justify-center">{svgPath}</div>
       {text}
-      {highlight && <div className="ml-auto rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-800">New</div>}
+      {highlight && (
+        <div className="ml-auto rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-800">
+          New
+        </div>
+      )}
     </Link>
   );
 }
@@ -160,7 +187,10 @@ function SidebarLink({active, to, text, disabled, highlight, svgPath}: SidebarLi
  * @param root0.mobileOpen
  * @param root0.onSidebarVisibilityChange
  */
-export default function Sidebar({mobileOpen, onSidebarVisibilityChange}: SidebarProps) {
+export default function Sidebar({
+  mobileOpen,
+  onSidebarVisibilityChange,
+}: SidebarProps) {
   const router = useRouter();
 
   const projectSelectorRef = React.createRef<HTMLDivElement>();
@@ -172,17 +202,17 @@ export default function Sidebar({mobileOpen, onSidebarVisibilityChange}: Sidebar
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            initial={{opacity: 0, x: -100}}
-            animate={{opacity: 1, x: 0}}
-            exit={{opacity: 0, x: -100}}
-            transition={{ease: 'easeOut', duration: 0.15}}
+            initial={{ opacity: 0, x: -100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            transition={{ ease: "easeOut", duration: 0.15 }}
             className="fixed inset-0 z-40 flex w-full md:hidden"
             role="dialog"
             aria-modal="true"
           >
             <motion.div
-              animate={{opacity: [0, 1]}}
-              transition={{ease: 'easeOut', duration: 0.15}}
+              animate={{ opacity: [0, 1] }}
+              transition={{ ease: "easeOut", duration: 0.15 }}
               className="fixed inset-0 bg-neutral-600 bg-opacity-75"
               aria-hidden={!mobileOpen}
             />
@@ -202,37 +232,53 @@ export default function Sidebar({mobileOpen, onSidebarVisibilityChange}: Sidebar
                     stroke="currentColor"
                     aria-hidden="true"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
 
               <div className="h-0 flex-1 overflow-y-auto pb-4 pt-5">
                 <div className="flex flex-shrink-0 items-center px-4">
-                  <Link href={'/'} passHref>
-                    <Image className={'cursor-pointer'} width={40} height={40} quality={40} src={logo} alt="Logo" />
+                  <Link href={"/"} passHref>
+                    <Image
+                      className={"cursor-pointer"}
+                      width={40}
+                      height={40}
+                      quality={40}
+                      src={logo}
+                      alt="Logo"
+                    />
                   </Link>
                 </div>
 
-                <div className={'mt-5 px-2'}>
+                <div className={"mt-5 px-2"}>
                   <ProjectSelector
                     open={projectSelectorOpen}
-                    onToggle={() => setProjectSelectorOpen(!projectSelectorOpen)}
+                    onToggle={() =>
+                      setProjectSelectorOpen(!projectSelectorOpen)
+                    }
                     ref={projectSelectorRef}
                   />
                 </div>
 
                 <nav className="mt-5 space-y-1 px-2">
                   {links
-                    .filter(l => l.position === 'top')
+                    .filter((l) => l.position === "top")
                     .map((link, index) => {
                       return (
                         <SidebarLink
                           key={`mobile-top-${index}`}
                           active={
-                            link.to === '/'
+                            link.to === "/"
                               ? router.pathname === link.to
-                              : router.pathname.split('/')[1].includes(link.to.split('/')[1])
+                              : router.pathname
+                                  .split("/")[1]
+                                  .includes(link.to.split("/")[1])
                           }
                           to={link.to}
                           text={link.text}
@@ -247,7 +293,7 @@ export default function Sidebar({mobileOpen, onSidebarVisibilityChange}: Sidebar
               <div className="flex-0 mb-4 space-y-1 bg-white px-2">
                 <nav>
                   {links
-                    .filter(l => l.position === 'bottom')
+                    .filter((l) => l.position === "bottom")
                     .map((link, index) => {
                       return (
                         <SidebarLink
@@ -275,12 +321,19 @@ export default function Sidebar({mobileOpen, onSidebarVisibilityChange}: Sidebar
           <div className="flex h-0 flex-1 flex-col border-r border-neutral-100 bg-white px-6">
             <div className="flex flex-1 flex-col overflow-y-auto pb-4 pt-5">
               <div className="flex flex-shrink-0 items-center justify-center px-4">
-                <Link href={'/'} passHref>
-                  <Image className={'cursor-pointer'} width={35} height={35} quality={80} src={logo} alt="Logo" />
+                <Link href={"/"} passHref>
+                  <Image
+                    className={"cursor-pointer"}
+                    width={35}
+                    height={35}
+                    quality={80}
+                    src={logo}
+                    alt="Logo"
+                  />
                 </Link>
               </div>
 
-              <div className={'px-2'}>
+              <div className={"px-2"}>
                 <ProjectSelector
                   open={projectSelectorOpen}
                   onToggle={() => setProjectSelectorOpen(!projectSelectorOpen)}
@@ -290,15 +343,23 @@ export default function Sidebar({mobileOpen, onSidebarVisibilityChange}: Sidebar
 
               <nav className="mt-5 flex-1 space-y-1 px-2">
                 {links
-                  .filter(l => l.position === 'top')
+                  .filter((l) => l.position === "top")
                   .map((link, index) => {
-                    if (link.to === '/events') {
+                    if (link.to === "/events") {
                       return (
-                        <div className={'pt-3'}>
-                          <p className={'pb-1 text-sm font-semibold text-neutral-500'}>Automations</p>
+                        <div className={"pt-3"} key={`desktop-top-${index}`}>
+                          <p
+                            className={
+                              "pb-1 text-sm font-semibold text-neutral-500"
+                            }
+                          >
+                            Automations
+                          </p>
                           <SidebarLink
                             key={`desktop-top-${index}`}
-                            active={router.pathname.split('/')[1].includes(link.to.split('/')[1])}
+                            active={router.pathname
+                              .split("/")[1]
+                              .includes(link.to.split("/")[1])}
                             to={link.to}
                             text={link.text}
                             disabled={link.disabled}
@@ -309,13 +370,21 @@ export default function Sidebar({mobileOpen, onSidebarVisibilityChange}: Sidebar
                       );
                     }
 
-                    if (link.to === '/campaigns') {
+                    if (link.to === "/campaigns") {
                       return (
-                        <div className={'py-3'}>
-                          <p className={'pb-1 text-sm font-semibold text-neutral-500'}>Campaigns</p>
+                        <div className={"py-3"} key={`desktop-top-${index}`}>
+                          <p
+                            className={
+                              "pb-1 text-sm font-semibold text-neutral-500"
+                            }
+                          >
+                            Campaigns
+                          </p>
                           <SidebarLink
                             key={`desktop-top-${index}`}
-                            active={router.pathname.split('/')[1].includes(link.to.split('/')[1])}
+                            active={router.pathname
+                              .split("/")[1]
+                              .includes(link.to.split("/")[1])}
                             to={link.to}
                             text={link.text}
                             disabled={link.disabled}
@@ -330,9 +399,11 @@ export default function Sidebar({mobileOpen, onSidebarVisibilityChange}: Sidebar
                       <SidebarLink
                         key={`desktop-top-${index}`}
                         active={
-                          link.to === '/'
+                          link.to === "/"
                             ? router.pathname === link.to
-                            : router.pathname.split('/')[1].includes(link.to.split('/')[1])
+                            : router.pathname
+                                .split("/")[1]
+                                .includes(link.to.split("/")[1])
                         }
                         to={link.to}
                         text={link.text}
@@ -347,9 +418,9 @@ export default function Sidebar({mobileOpen, onSidebarVisibilityChange}: Sidebar
 
             <div className="flex-0 mb-4 w-full space-y-1 bg-white px-2">
               <Link
-                href={'/auth/logout'}
+                href={"/auth/logout"}
                 className={
-                  'flex cursor-pointer items-center gap-x-3 rounded p-2 text-sm font-medium text-neutral-400 transition ease-in-out hover:bg-neutral-50 hover:text-neutral-700'
+                  "flex cursor-pointer items-center gap-x-3 rounded p-2 text-sm font-medium text-neutral-400 transition ease-in-out hover:bg-neutral-50 hover:text-neutral-700"
                 }
               >
                 <div className="flex h-5 w-5 items-center justify-center">

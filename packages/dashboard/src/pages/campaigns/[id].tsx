@@ -16,7 +16,7 @@ import {
   Badge,
   Card,
   Dropdown,
-  EmailEditor,
+  EditorSwitcher,
   FullscreenLoader,
   Input,
   Modal,
@@ -24,11 +24,16 @@ import {
   Table,
 } from "../../components";
 import { Dashboard } from "../../layouts";
-import { useCampaign, useCampaigns } from "../../lib/hooks/campaigns";
+import {
+  useAutoSaveDraftByTime,
+  useCampaign,
+  useCampaigns,
+} from "../../lib/hooks/campaigns";
 import { useContacts } from "../../lib/hooks/contacts";
 import { useEventsWithoutTriggers } from "../../lib/hooks/events";
 import { useActiveProject } from "../../lib/hooks/projects";
 import { network } from "../../lib/network";
+import { FormProvider } from "react-hook-form";
 
 /**
  *
@@ -60,6 +65,10 @@ export default function Index() {
   const [advancedSelector, setSelector] = useState(false);
   const [delay, setDelay] = useState(0);
 
+  const methods = useZodForm(CampaignSchemas.update, {
+    defaultValues: { recipients: [], body: undefined },
+  });
+
   const {
     register,
     handleSubmit,
@@ -69,8 +78,15 @@ export default function Index() {
     setValue,
     setError,
     clearErrors,
-  } = useZodForm(CampaignSchemas.update, {
-    defaultValues: { recipients: [], body: undefined },
+  } = methods;
+
+  useAutoSaveDraftByTime({
+    draftId: campaign?.id,
+    formData: watch(),
+    projectSecret: project?.secret || "",
+    errors,
+    contacts: contacts?.contacts || [],
+    isRunning: !!(campaign?.id && campaign.status === "DRAFT"),
   });
 
   useEffect(() => {
@@ -499,662 +515,650 @@ export default function Index() {
             </>
           }
         >
-          <form
-            onSubmit={handleSubmit(update)}
-            className="grid gap-6 space-6 sm:grid-cols-6"
-          >
-            <div className={"sm:col-span-6 grid sm:grid-cols-6 gap-6"}>
-              <Input
-                className={"sm:col-span-6"}
-                label={"Subject"}
-                placeholder={`Welcome to ${project.name}!`}
-                register={register("subject")}
-                error={errors.subject}
-              />
-
-              {project.verified && (
+          <FormProvider {...methods}>
+            <form
+              onSubmit={handleSubmit(update)}
+              className="grid gap-6 space-6 sm:grid-cols-6"
+            >
+              <div className={"sm:col-span-6 grid sm:grid-cols-6 gap-6"}>
                 <Input
-                  className={"sm:col-span-3"}
-                  label={"Sender Email"}
-                  placeholder={`${project.email}`}
-                  register={register("email")}
-                  error={errors.email}
+                  className={"sm:col-span-6"}
+                  label={"Subject"}
+                  placeholder={`Welcome to ${project.name}!`}
+                  register={register("subject")}
+                  error={errors.subject}
                 />
-              )}
 
-              {project.verified && (
-                <Input
-                  className={"sm:col-span-3"}
-                  label={"Sender Name"}
-                  placeholder={`${project.from ?? project.name}`}
-                  register={register("from")}
-                  error={errors.from}
-                />
-              )}
-            </div>
-
-            {contacts ? (
-              <>
-                <div className={"sm:col-span-3"}>
-                  <label
-                    htmlFor={"recipients"}
-                    className="block text-sm font-medium text-neutral-700"
-                  >
-                    Recipients
-                  </label>
-                  <MultiselectDropdown
-                    disabled={campaign.status !== "DRAFT"}
-                    onChange={(c) => setValue("recipients", c)}
-                    values={contacts.contacts
-                      .filter((c) => c.subscribed)
-                      .map((c) => {
-                        return { name: c.email, value: c.id };
-                      })}
-                    selectedValues={watch("recipients")}
+                {project.verified && (
+                  <Input
+                    className={"sm:col-span-3"}
+                    label={"Sender Email"}
+                    placeholder={`${project.email}`}
+                    register={register("email")}
+                    error={errors.email}
                   />
+                )}
+
+                {project.verified && (
+                  <Input
+                    className={"sm:col-span-3"}
+                    label={"Sender Name"}
+                    placeholder={`${project.from ?? project.name}`}
+                    register={register("from")}
+                    error={errors.from}
+                  />
+                )}
+              </div>
+
+              {contacts ? (
+                <>
+                  <div className={"sm:col-span-3"}>
+                    <label
+                      htmlFor={"recipients"}
+                      className="block text-sm font-medium text-neutral-700"
+                    >
+                      Recipients
+                    </label>
+                    <MultiselectDropdown
+                      disabled={campaign.status !== "DRAFT"}
+                      onChange={(c) => setValue("recipients", c)}
+                      values={contacts.contacts
+                        .filter((c) => c.subscribed)
+                        .map((c) => {
+                          return { name: c.email, value: c.id };
+                        })}
+                      selectedValues={watch("recipients")}
+                    />
+                    <AnimatePresence>
+                      {(errors.recipients as FieldError | undefined)
+                        ?.message && (
+                        <motion.p
+                          initial={{ height: 0 }}
+                          animate={{ height: "auto" }}
+                          exit={{ height: 0 }}
+                          className="mt-1 text-xs text-red-500"
+                        >
+                          {
+                            (errors.recipients as FieldError | undefined)
+                              ?.message
+                          }
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  <div className={"grid gap-6 sm:col-span-3 sm:grid-cols-2"}>
+                    {campaign.status === "DRAFT" && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+
+                            if (watch("recipients").length > 0) {
+                              return setValue("recipients", []);
+                            }
+
+                            setValue(
+                              "recipients",
+                              contacts.contacts
+                                .filter((c) => c.subscribed)
+                                .map((c) => c.id)
+                            );
+                          }}
+                          className={
+                            "mt-6 flex items-center justify-center gap-x-1 rounded border border-neutral-300 bg-white px-8 py-1 text-center text-sm font-medium text-neutral-800 transition ease-in-out hover:bg-neutral-100"
+                          }
+                        >
+                          {watch("recipients").length === 0 ? (
+                            <Users2 size={18} />
+                          ) : (
+                            <XIcon size={18} />
+                          )}
+                          {watch("recipients").length === 0
+                            ? "All contacts"
+                            : "Clear selection"}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setSelector(!advancedSelector);
+                          }}
+                          className={
+                            "mt-6 flex items-center justify-center gap-x-1 rounded border border-neutral-300 bg-white px-8 py-1 text-center text-sm font-medium text-neutral-800 transition ease-in-out hover:bg-neutral-100"
+                          }
+                        >
+                          {advancedSelector ? (
+                            <XIcon size={18} />
+                          ) : (
+                            <Search size={18} />
+                          )}
+                          {advancedSelector ? "Close" : "Advanced selector"}
+                        </button>
+                      </>
+                    )}
+                  </div>
+
                   <AnimatePresence>
-                    {(errors.recipients as FieldError | undefined)?.message && (
-                      <motion.p
-                        initial={{ height: 0 }}
-                        animate={{ height: "auto" }}
-                        exit={{ height: 0 }}
-                        className="mt-1 text-xs text-red-500"
+                    {advancedSelector && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className={
+                          "relative z-20 grid gap-6 rounded border border-neutral-300 px-6 py-6 sm:col-span-6 sm:grid-cols-4"
+                        }
                       >
-                        {(errors.recipients as FieldError | undefined)?.message}
-                      </motion.p>
+                        <div className={"sm:col-span-2"}>
+                          <label
+                            htmlFor={"event"}
+                            className="block text-sm font-medium text-neutral-700"
+                          >
+                            Has triggers for events
+                          </label>
+                          <MultiselectDropdown
+                            onChange={(e) =>
+                              setQuery(
+                                e.length > 0
+                                  ? { ...query, events: e }
+                                  : {
+                                      ...query,
+                                      events: undefined,
+                                      last: undefined,
+                                    }
+                              )
+                            }
+                            values={[
+                              ...events
+                                .filter((e) => !query.notevents?.includes(e.id))
+                                .sort((a, b) => {
+                                  if (!a.templateId && !a.campaignId) {
+                                    return -1;
+                                  }
+                                  if (!b.templateId && !b.campaignId) {
+                                    return 1;
+                                  }
+
+                                  if (
+                                    a.name.includes("delivered") &&
+                                    !b.name.includes("delivered")
+                                  ) {
+                                    return -1;
+                                  }
+
+                                  return 0;
+                                })
+                                .map((e) => {
+                                  return {
+                                    name: e.name,
+                                    value: e.id,
+                                    tag:
+                                      e.templateId ?? e.campaignId
+                                        ? e.name.includes("opened")
+                                          ? "On Open"
+                                          : "On Delivery"
+                                        : undefined,
+                                  };
+                                }),
+                            ]}
+                            selectedValues={query.events ?? []}
+                          />
+                        </div>
+
+                        <div className={"sm:col-span-2"}>
+                          {query.events && query.events.length > 0 && (
+                            <>
+                              <label
+                                htmlFor={"event"}
+                                className="block text-sm font-medium text-neutral-700"
+                              >
+                                Has triggered {query.events.length} selected
+                                events
+                              </label>
+                              <Dropdown
+                                onChange={(e) =>
+                                  setQuery({
+                                    ...query,
+                                    last:
+                                      (e as "" | "day" | "week" | "month") ===
+                                      ""
+                                        ? undefined
+                                        : (e as "day" | "week" | "month"),
+                                  })
+                                }
+                                values={[
+                                  { name: "Anytime", value: "" },
+                                  { name: "In the last day", value: "day" },
+                                  { name: "In the last week", value: "week" },
+                                  { name: "In the last month", value: "month" },
+                                ]}
+                                selectedValue={query.last ?? ""}
+                              />
+                            </>
+                          )}
+                        </div>
+
+                        <div className={"sm:col-span-2"}>
+                          <label
+                            htmlFor={"event"}
+                            className="block text-sm font-medium text-neutral-700"
+                          >
+                            No triggers for events
+                          </label>
+                          <MultiselectDropdown
+                            onChange={(e) => {
+                              setQuery(
+                                e.length > 0
+                                  ? { ...query, notevents: e }
+                                  : {
+                                      ...query,
+                                      notevents: undefined,
+                                      notlast: undefined,
+                                    }
+                              );
+                            }}
+                            values={[
+                              ...events
+                                .filter((e) => !query.events?.includes(e.id))
+                                .sort((a, b) => {
+                                  if (!a.templateId && !a.campaignId) {
+                                    return -1;
+                                  }
+                                  if (!b.templateId && !b.campaignId) {
+                                    return 1;
+                                  }
+
+                                  if (
+                                    a.name.includes("delivered") &&
+                                    !b.name.includes("delivered")
+                                  ) {
+                                    return -1;
+                                  }
+
+                                  return 0;
+                                })
+                                .map((e) => {
+                                  return {
+                                    name: e.name,
+                                    value: e.id,
+                                    tag:
+                                      e.templateId ?? e.campaignId
+                                        ? e.name.includes("opened")
+                                          ? "On Open"
+                                          : "On Delivery"
+                                        : undefined,
+                                  };
+                                }),
+                            ]}
+                            selectedValues={query.notevents ?? []}
+                          />
+                        </div>
+
+                        <div className={"sm:col-span-2"}>
+                          {query.notevents && query.notevents.length > 0 && (
+                            <>
+                              <label
+                                htmlFor={"event"}
+                                className="block text-sm font-medium text-neutral-700"
+                              >
+                                Not triggered {query.notevents.length} selected
+                                events
+                              </label>
+                              <Dropdown
+                                onChange={(e) =>
+                                  setQuery({
+                                    ...query,
+                                    notlast:
+                                      (e as "" | "day" | "week" | "month") ===
+                                      ""
+                                        ? undefined
+                                        : (e as "day" | "week" | "month"),
+                                  })
+                                }
+                                values={[
+                                  { name: "Anytime", value: "" },
+                                  { name: "In the last day", value: "day" },
+                                  { name: "In the last week", value: "week" },
+                                  { name: "In the last month", value: "month" },
+                                ]}
+                                selectedValue={query.notlast ?? ""}
+                              />
+                            </>
+                          )}
+                        </div>
+
+                        <div className={"sm:col-span-2"}>
+                          <label
+                            htmlFor={"event"}
+                            className="block text-sm font-medium text-neutral-700"
+                          >
+                            All contacts with parameter
+                          </label>
+                          <Dropdown
+                            onChange={(e) =>
+                              setQuery({
+                                ...query,
+                                data: e === "" ? undefined : e,
+                              })
+                            }
+                            values={[
+                              { name: "Any parameter", value: "" },
+                              ...new Set(
+                                contacts.contacts
+                                  .filter((c) => c.data)
+                                  .map((c) => {
+                                    return Object.keys(
+                                      JSON.parse(c.data ?? "{}")
+                                    );
+                                  })
+                                  .reduce((acc, val) => acc.concat(val), [])
+                              ),
+                            ].map((k) =>
+                              typeof k === "string" ? { name: k, value: k } : k
+                            )}
+                            selectedValue={query.data ?? ""}
+                          />
+                        </div>
+
+                        <div className={"sm:col-span-2"}>
+                          {query.data && (
+                            <>
+                              <label
+                                htmlFor={"event"}
+                                className="block text-sm font-medium text-neutral-700"
+                              >
+                                All contacts where parameter {query.data} is
+                              </label>
+
+                              <MultiselectDropdown
+                                onChange={(values) => {
+                                  setQuery((prevQuery) => {
+                                    const isAnyPreviouslySelected =
+                                      prevQuery.value?.includes("any");
+                                    const isAnySelectedNow =
+                                      values.includes("any");
+
+                                    let newValue: string[];
+
+                                    if (isAnyPreviouslySelected) {
+                                      // If 'any' was previously selected and now another item is selected,
+                                      // remove 'any' and use the new values
+                                      newValue = values.filter(
+                                        (v) => v !== "any"
+                                      );
+                                    } else if (isAnySelectedNow) {
+                                      // If 'any' is selected now, make it the only selection
+                                      newValue = ["any"];
+                                    } else {
+                                      // Otherwise, use the new selection
+                                      newValue = values;
+                                    }
+
+                                    return { ...prevQuery, value: newValue };
+                                  });
+                                }}
+                                values={[
+                                  { name: "Any value", value: "any" },
+                                  ...Array.from(
+                                    new Set(
+                                      contacts.contacts
+                                        .filter(
+                                          (c) =>
+                                            c.data &&
+                                            JSON.parse(c.data)[query.data ?? ""]
+                                        )
+                                        .flatMap(
+                                          (c) =>
+                                            JSON.parse(c.data ?? "{}")[
+                                              query.data ?? ""
+                                            ]
+                                        )
+                                    )
+                                  ).map((value) => ({
+                                    name: String(value),
+                                    value: String(value),
+                                  })),
+                                ]}
+                                selectedValues={query.value ?? []}
+                              />
+                            </>
+                          )}
+                        </div>
+
+                        <div className={"sm:col-span-4"}>
+                          <motion.button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              selectQuery();
+                            }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.9 }}
+                            className={
+                              "ml-auto flex items-center justify-center gap-x-0.5 rounded bg-neutral-800 px-8 py-2 text-center text-sm font-medium text-white"
+                            }
+                          >
+                            <svg
+                              width="24"
+                              height="24"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke="currentColor"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="1.5"
+                                d="M12 5.75V18.25"
+                              />
+                              <path
+                                stroke="currentColor"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="1.5"
+                                d="M18.25 12L5.75 12"
+                              />
+                            </svg>
+                            Select contacts
+                          </motion.button>
+                        </div>
+                      </motion.div>
                     )}
                   </AnimatePresence>
-                </div>
+                </>
+              ) : (
+                campaign.status === "DRAFT" && (
+                  <div
+                    className={
+                      "flex items-center gap-6 rounded border border-neutral-300 px-8 py-3 sm:col-span-6"
+                    }
+                  >
+                    <Ring size={20} />
+                    <div>
+                      <h1 className={"text-lg font-semibold text-neutral-800"}>
+                        Hang on!
+                      </h1>
+                      <p className={"text-sm text-neutral-600"}>
+                        We're still loading your contacts. This might take up to
+                        a minute. You can already start writing your campaign in
+                        the editor below.
+                      </p>
+                    </div>
+                  </div>
+                )
+              )}
 
-                <div className={"grid gap-6 sm:col-span-3 sm:grid-cols-2"}>
-                  {campaign.status === "DRAFT" && (
-                    <>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-
-                          if (watch("recipients").length > 0) {
-                            return setValue("recipients", []);
-                          }
-
-                          setValue(
-                            "recipients",
-                            contacts.contacts
-                              .filter((c) => c.subscribed)
-                              .map((c) => c.id)
-                          );
-                        }}
-                        className={
-                          "mt-6 flex items-center justify-center gap-x-1 rounded border border-neutral-300 bg-white px-8 py-1 text-center text-sm font-medium text-neutral-800 transition ease-in-out hover:bg-neutral-100"
-                        }
-                      >
-                        {watch("recipients").length === 0 ? (
-                          <Users2 size={18} />
-                        ) : (
-                          <XIcon size={18} />
-                        )}
-                        {watch("recipients").length === 0
-                          ? "All contacts"
-                          : "Clear selection"}
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setSelector(!advancedSelector);
-                        }}
-                        className={
-                          "mt-6 flex items-center justify-center gap-x-1 rounded border border-neutral-300 bg-white px-8 py-1 text-center text-sm font-medium text-neutral-800 transition ease-in-out hover:bg-neutral-100"
-                        }
-                      >
-                        {advancedSelector ? (
-                          <XIcon size={18} />
-                        ) : (
-                          <Search size={18} />
-                        )}
-                        {advancedSelector ? "Close" : "Advanced selector"}
-                      </button>
-                    </>
-                  )}
-                </div>
-
-                <AnimatePresence>
-                  {advancedSelector && (
+              <AnimatePresence>
+                {watch("recipients").length >= 10 &&
+                  campaign.status !== "DELIVERED" && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className={
-                        "relative z-20 grid gap-6 rounded border border-neutral-300 px-6 py-6 sm:col-span-6 sm:grid-cols-4"
-                      }
+                      className={"relative z-10 sm:col-span-6"}
                     >
-                      <div className={"sm:col-span-2"}>
-                        <label
-                          htmlFor={"event"}
-                          className="block text-sm font-medium text-neutral-700"
-                        >
-                          Has triggers for events
-                        </label>
-                        <MultiselectDropdown
-                          onChange={(e) =>
-                            setQuery(
-                              e.length > 0
-                                ? { ...query, events: e }
-                                : {
-                                    ...query,
-                                    events: undefined,
-                                    last: undefined,
-                                  }
-                            )
-                          }
-                          values={[
-                            ...events
-                              .filter((e) => !query.notevents?.includes(e.id))
-                              .sort((a, b) => {
-                                if (!a.templateId && !a.campaignId) {
-                                  return -1;
-                                }
-                                if (!b.templateId && !b.campaignId) {
-                                  return 1;
-                                }
-
-                                if (
-                                  a.name.includes("delivered") &&
-                                  !b.name.includes("delivered")
-                                ) {
-                                  return -1;
-                                }
-
-                                return 0;
-                              })
-                              .map((e) => {
-                                return {
-                                  name: e.name,
-                                  value: e.id,
-                                  tag:
-                                    e.templateId ?? e.campaignId
-                                      ? e.name.includes("opened")
-                                        ? "On Open"
-                                        : "On Delivery"
-                                      : undefined,
-                                };
-                              }),
-                          ]}
-                          selectedValues={query.events ?? []}
-                        />
-                      </div>
-
-                      <div className={"sm:col-span-2"}>
-                        {query.events && query.events.length > 0 && (
-                          <>
-                            <label
-                              htmlFor={"event"}
-                              className="block text-sm font-medium text-neutral-700"
-                            >
-                              Has triggered {query.events.length} selected
-                              events
-                            </label>
-                            <Dropdown
-                              onChange={(e) =>
-                                setQuery({
-                                  ...query,
-                                  last:
-                                    (e as "" | "day" | "week" | "month") === ""
-                                      ? undefined
-                                      : (e as "day" | "week" | "month"),
-                                })
-                              }
-                              values={[
-                                { name: "Anytime", value: "" },
-                                { name: "In the last day", value: "day" },
-                                { name: "In the last week", value: "week" },
-                                { name: "In the last month", value: "month" },
-                              ]}
-                              selectedValue={query.last ?? ""}
-                            />
-                          </>
+                      <Alert type={"info"} title={"Automatic batching"}>
+                        Your campaign will be sent out in batches of 80
+                        recipients each. It will be delivered to all contacts{" "}
+                        {dayjs().to(
+                          dayjs().add(
+                            Math.ceil(watch("recipients").length / 80),
+                            "minutes"
+                          )
                         )}
-                      </div>
-
-                      <div className={"sm:col-span-2"}>
-                        <label
-                          htmlFor={"event"}
-                          className="block text-sm font-medium text-neutral-700"
-                        >
-                          No triggers for events
-                        </label>
-                        <MultiselectDropdown
-                          onChange={(e) => {
-                            setQuery(
-                              e.length > 0
-                                ? { ...query, notevents: e }
-                                : {
-                                    ...query,
-                                    notevents: undefined,
-                                    notlast: undefined,
-                                  }
-                            );
-                          }}
-                          values={[
-                            ...events
-                              .filter((e) => !query.events?.includes(e.id))
-                              .sort((a, b) => {
-                                if (!a.templateId && !a.campaignId) {
-                                  return -1;
-                                }
-                                if (!b.templateId && !b.campaignId) {
-                                  return 1;
-                                }
-
-                                if (
-                                  a.name.includes("delivered") &&
-                                  !b.name.includes("delivered")
-                                ) {
-                                  return -1;
-                                }
-
-                                return 0;
-                              })
-                              .map((e) => {
-                                return {
-                                  name: e.name,
-                                  value: e.id,
-                                  tag:
-                                    e.templateId ?? e.campaignId
-                                      ? e.name.includes("opened")
-                                        ? "On Open"
-                                        : "On Delivery"
-                                      : undefined,
-                                };
-                              }),
-                          ]}
-                          selectedValues={query.notevents ?? []}
-                        />
-                      </div>
-
-                      <div className={"sm:col-span-2"}>
-                        {query.notevents && query.notevents.length > 0 && (
-                          <>
-                            <label
-                              htmlFor={"event"}
-                              className="block text-sm font-medium text-neutral-700"
-                            >
-                              Not triggered {query.notevents.length} selected
-                              events
-                            </label>
-                            <Dropdown
-                              onChange={(e) =>
-                                setQuery({
-                                  ...query,
-                                  notlast:
-                                    (e as "" | "day" | "week" | "month") === ""
-                                      ? undefined
-                                      : (e as "day" | "week" | "month"),
-                                })
-                              }
-                              values={[
-                                { name: "Anytime", value: "" },
-                                { name: "In the last day", value: "day" },
-                                { name: "In the last week", value: "week" },
-                                { name: "In the last month", value: "month" },
-                              ]}
-                              selectedValue={query.notlast ?? ""}
-                            />
-                          </>
-                        )}
-                      </div>
-
-                      <div className={"sm:col-span-2"}>
-                        <label
-                          htmlFor={"event"}
-                          className="block text-sm font-medium text-neutral-700"
-                        >
-                          All contacts with parameter
-                        </label>
-                        <Dropdown
-                          onChange={(e) =>
-                            setQuery({
-                              ...query,
-                              data: e === "" ? undefined : e,
-                            })
-                          }
-                          values={[
-                            { name: "Any parameter", value: "" },
-                            ...new Set(
-                              contacts.contacts
-                                .filter((c) => c.data)
-                                .map((c) => {
-                                  return Object.keys(
-                                    JSON.parse(c.data ?? "{}")
-                                  );
-                                })
-                                .reduce((acc, val) => acc.concat(val), [])
-                            ),
-                          ].map((k) =>
-                            typeof k === "string" ? { name: k, value: k } : k
-                          )}
-                          selectedValue={query.data ?? ""}
-                        />
-                      </div>
-
-                      <div className={"sm:col-span-2"}>
-                        {query.data && (
-                          <>
-                            <label
-                              htmlFor={"event"}
-                              className="block text-sm font-medium text-neutral-700"
-                            >
-                              All contacts where parameter {query.data} is
-                            </label>
-
-                            <MultiselectDropdown
-                              onChange={(values) => {
-                                setQuery((prevQuery) => {
-                                  const isAnyPreviouslySelected =
-                                    prevQuery.value?.includes("any");
-                                  const isAnySelectedNow =
-                                    values.includes("any");
-
-                                  let newValue: string[];
-
-                                  if (isAnyPreviouslySelected) {
-                                    // If 'any' was previously selected and now another item is selected,
-                                    // remove 'any' and use the new values
-                                    newValue = values.filter(
-                                      (v) => v !== "any"
-                                    );
-                                  } else if (isAnySelectedNow) {
-                                    // If 'any' is selected now, make it the only selection
-                                    newValue = ["any"];
-                                  } else {
-                                    // Otherwise, use the new selection
-                                    newValue = values;
-                                  }
-
-                                  return { ...prevQuery, value: newValue };
-                                });
-                              }}
-                              values={[
-                                { name: "Any value", value: "any" },
-                                ...Array.from(
-                                  new Set(
-                                    contacts.contacts
-                                      .filter(
-                                        (c) =>
-                                          c.data &&
-                                          JSON.parse(c.data)[query.data ?? ""]
-                                      )
-                                      .flatMap(
-                                        (c) =>
-                                          JSON.parse(c.data ?? "{}")[
-                                            query.data ?? ""
-                                          ]
-                                      )
-                                  )
-                                ).map((value) => ({
-                                  name: String(value),
-                                  value: String(value),
-                                })),
-                              ]}
-                              selectedValues={query.value ?? []}
-                            />
-                          </>
-                        )}
-                      </div>
-
-                      <div className={"sm:col-span-4"}>
-                        <motion.button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            selectQuery();
-                          }}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.9 }}
-                          className={
-                            "ml-auto flex items-center justify-center gap-x-0.5 rounded bg-neutral-800 px-8 py-2 text-center text-sm font-medium text-white"
-                          }
-                        >
-                          <svg
-                            width="24"
-                            height="24"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              stroke="currentColor"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="1.5"
-                              d="M12 5.75V18.25"
-                            />
-                            <path
-                              stroke="currentColor"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="1.5"
-                              d="M18.25 12L5.75 12"
-                            />
-                          </svg>
-                          Select contacts
-                        </motion.button>
-                      </div>
+                      </Alert>
                     </motion.div>
                   )}
-                </AnimatePresence>
-              </>
-            ) : (
-              campaign.status === "DRAFT" && (
-                <div
-                  className={
-                    "flex items-center gap-6 rounded border border-neutral-300 px-8 py-3 sm:col-span-6"
-                  }
-                >
-                  <Ring size={20} />
-                  <div>
-                    <h1 className={"text-lg font-semibold text-neutral-800"}>
-                      Hang on!
-                    </h1>
-                    <p className={"text-sm text-neutral-600"}>
-                      We're still loading your contacts. This might take up to a
-                      minute. You can already start writing your campaign in the
-                      editor below.
-                    </p>
-                  </div>
-                </div>
-              )
-            )}
-
-            <AnimatePresence>
-              {watch("recipients").length >= 10 &&
-                campaign.status !== "DELIVERED" && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className={"relative z-10 sm:col-span-6"}
-                  >
-                    <Alert type={"info"} title={"Automatic batching"}>
-                      Your campaign will be sent out in batches of 80 recipients
-                      each. It will be delivered to all contacts{" "}
-                      {dayjs().to(
-                        dayjs().add(
-                          Math.ceil(watch("recipients").length / 80),
-                          "minutes"
-                        )
-                      )}
-                    </Alert>
-                  </motion.div>
-                )}
-            </AnimatePresence>
-
-            {campaign.status !== "DRAFT" &&
-              (campaign.emails.length === 0 ? (
-                <div
-                  className={
-                    "flex items-center gap-6 rounded border border-neutral-300 px-6 py-3 sm:col-span-6"
-                  }
-                >
-                  <Ring size={20} />
-                  <div>
-                    <h1 className={"text-lg font-semibold text-neutral-800"}>
-                      Hang on!
-                    </h1>
-                    <p className={"text-sm text-neutral-600"}>
-                      We are still sending your campaign. Emails will start
-                      appearing here once they are sent.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className={
-                    "max-h-[400px] overflow-x-hidden overflow-y-scroll rounded border border-neutral-200 sm:col-span-6"
-                  }
-                >
-                  <Table
-                    values={campaign.emails.map(
-                      (e: {
-                        contact: { email: string; id: string };
-                        status: string;
-                      }) => {
-                        return {
-                          Email: e.contact.email,
-                          Status: (
-                            <Badge
-                              type={
-                                e.status === "DELIVERED"
-                                  ? "info"
-                                  : e.status === "OPENED"
-                                  ? "success"
-                                  : "danger"
-                              }
-                            >
-                              {e.status.at(0)?.toUpperCase() +
-                                e.status.slice(1).toLowerCase()}
-                            </Badge>
-                          ),
-                          View: (
-                            <Link href={`/contacts/${e.contact.id}`}>
-                              <Eye size={20} />
-                            </Link>
-                          ),
-                        };
-                      }
-                    )}
-                  />
-                </div>
-              ))}
-
-            <div className={"sm:col-span-6"}>
-              <EmailEditor
-                htmlOnChange={(value) => {
-                  setValue("body", value);
-                }}
-                jsonValue={campaign?.emailJson}
-                jsonOnChange={(value) => {
-                  setValue("emailJson", value);
-                }}
-              />
-              <AnimatePresence>
-                {errors.body?.message && (
-                  <motion.p
-                    initial={{ height: 0 }}
-                    animate={{ height: "auto" }}
-                    exit={{ height: 0 }}
-                    className="mt-1 text-xs text-red-500"
-                  >
-                    {errors.body.message}
-                  </motion.p>
-                )}
               </AnimatePresence>
-            </div>
 
-            <div
-              className={"ml-auto mt-6 flex justify-end gap-x-5 sm:col-span-6"}
-            >
-              {campaign.status === "DRAFT" ? (
-                <>
-                  <motion.button
-                    onClick={handleSubmit(sendTest)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.9 }}
+              {campaign.status !== "DRAFT" &&
+                (campaign.emails.length === 0 ? (
+                  <div
                     className={
-                      "ml-auto mt-6 flex items-center gap-x-0.5 rounded bg-neutral-800 px-6 py-2 text-center text-sm font-medium text-white"
+                      "flex items-center gap-6 rounded border border-neutral-300 px-6 py-3 sm:col-span-6"
                     }
                   >
-                    <svg
-                      width="24"
-                      height="24"
-                      className={"rotate-45 pb-1"}
-                      fill="none"
-                      viewBox="0 0 24 24"
+                    <Ring size={20} />
+                    <div>
+                      <h1 className={"text-lg font-semibold text-neutral-800"}>
+                        Hang on!
+                      </h1>
+                      <p className={"text-sm text-neutral-600"}>
+                        We are still sending your campaign. Emails will start
+                        appearing here once they are sent.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className={
+                      "max-h-[400px] overflow-x-hidden overflow-y-scroll rounded border border-neutral-200 sm:col-span-6"
+                    }
+                  >
+                    <Table
+                      values={campaign.emails.map(
+                        (e: {
+                          contact: { email: string; id: string };
+                          status: string;
+                        }) => {
+                          return {
+                            Email: e.contact.email,
+                            Status: (
+                              <Badge
+                                type={
+                                  e.status === "DELIVERED"
+                                    ? "info"
+                                    : e.status === "OPENED"
+                                    ? "success"
+                                    : "danger"
+                                }
+                              >
+                                {e.status.at(0)?.toUpperCase() +
+                                  e.status.slice(1).toLowerCase()}
+                              </Badge>
+                            ),
+                            View: (
+                              <Link href={`/contacts/${e.contact.id}`}>
+                                <Eye size={20} />
+                              </Link>
+                            ),
+                          };
+                        }
+                      )}
+                    />
+                  </div>
+                ))}
+
+              <EditorSwitcher modeSwitcher={campaign} />
+
+              <div
+                className={
+                  "ml-auto mt-6 flex justify-end gap-x-5 sm:col-span-6"
+                }
+              >
+                {campaign.status === "DRAFT" ? (
+                  <>
+                    <motion.button
+                      onClick={handleSubmit(sendTest)}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.9 }}
+                      className={
+                        "ml-auto mt-6 flex items-center gap-x-0.5 rounded bg-neutral-800 px-6 py-2 text-center text-sm font-medium text-white"
+                      }
                     >
-                      <path
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="1.5"
-                        d="M4.75 19.25L12 4.75L19.25 19.25L12 15.75L4.75 19.25Z"
-                      />
-                      <path
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="1.5"
-                        d="M12 15.5V12.75"
-                      />
-                    </svg>
-                    Send test to {project.name}'s members
-                  </motion.button>
-                  <motion.button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setConfirmModal(true);
-                    }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.9 }}
-                    className={
-                      "ml-auto mt-6 flex items-center gap-x-0.5 rounded bg-neutral-800 px-6 py-2 text-center text-sm font-medium text-white"
-                    }
-                  >
-                    <svg
-                      width="24"
-                      height="24"
-                      className={"rotate-45 pb-1"}
-                      fill="none"
-                      viewBox="0 0 24 24"
+                      <svg
+                        width="24"
+                        height="24"
+                        className={"rotate-45 pb-1"}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="1.5"
+                          d="M4.75 19.25L12 4.75L19.25 19.25L12 15.75L4.75 19.25Z"
+                        />
+                        <path
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="1.5"
+                          d="M12 15.5V12.75"
+                        />
+                      </svg>
+                      Send test to {project.name}'s members
+                    </motion.button>
+                    <motion.button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setConfirmModal(true);
+                      }}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.9 }}
+                      className={
+                        "ml-auto mt-6 flex items-center gap-x-0.5 rounded bg-neutral-800 px-6 py-2 text-center text-sm font-medium text-white"
+                      }
                     >
-                      <path
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="1.5"
-                        d="M4.75 19.25L12 4.75L19.25 19.25L12 15.75L4.75 19.25Z"
-                      />
-                      <path
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="1.5"
-                        d="M12 15.5V12.75"
-                      />
-                    </svg>
-                    Save & Send
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.9 }}
-                    className={
-                      "ml-auto mt-6 flex items-center gap-x-2 rounded bg-neutral-800 px-6 py-2 text-center text-sm font-medium text-white"
-                    }
-                  >
-                    <Save strokeWidth={1.5} size={18} />
-                    Save
-                  </motion.button>
-                </>
-              ) : null}
-            </div>
-          </form>
+                      <svg
+                        width="24"
+                        height="24"
+                        className={"rotate-45 pb-1"}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="1.5"
+                          d="M4.75 19.25L12 4.75L19.25 19.25L12 15.75L4.75 19.25Z"
+                        />
+                        <path
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="1.5"
+                          d="M12 15.5V12.75"
+                        />
+                      </svg>
+                      Save & Send
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.9 }}
+                      className={
+                        "ml-auto mt-6 flex items-center gap-x-2 rounded bg-neutral-800 px-6 py-2 text-center text-sm font-medium text-white"
+                      }
+                    >
+                      <Save strokeWidth={1.5} size={18} />
+                      Save
+                    </motion.button>
+                  </>
+                ) : null}
+              </div>
+            </form>
+          </FormProvider>
         </Card>
       </Dashboard>
     </>
