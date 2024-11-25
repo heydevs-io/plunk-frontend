@@ -14,12 +14,7 @@ import {
   Alert,
   Card,
   Dropdown,
-<<<<<<< HEAD
-  Editor,
-  EmailEditor,
-=======
   EditorSwitcher,
->>>>>>> c12451f (feat(dashboard/campaigns): allow pasting HTML content into campaign editor)
   FullscreenLoader,
   Input,
   MultiselectDropdown,
